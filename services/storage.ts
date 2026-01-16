@@ -15,27 +15,32 @@ export interface AppData {
   version: number;
 }
 
-export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'unauthorized' | 'conflict';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'unauthorized' | 'conflict' | 'rate-limited';
 
 class GitHubStorageService {
   private lastSha: string | null = null;
 
   async loadData(): Promise<AppData | null> {
     try {
+      const headers: Record<string, string> = {
+        'Accept': 'application/vnd.github.v3+json'
+      };
+      
+      if (GITHUB_TOKEN) {
+        headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+      }
+
       // Add a cache buster to the URL to ensure we always get the latest from GitHub's servers
       const response = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
-        {
-          headers: GITHUB_TOKEN ? { 
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json'
-          } : {
-            'Accept': 'application/vnd.github.v3+json'
-          },
-        }
+        { headers }
       );
 
       if (!response.ok) {
+        if (response.status === 403) {
+          console.warn('GitHub API Rate Limit Exceeded (403). Falling back to local data.');
+          return null;
+        }
         if (response.status === 404) return null;
         throw new Error(`GitHub Load Error: ${response.status}`);
       }
@@ -61,22 +66,23 @@ class GitHubStorageService {
     if (!GITHUB_TOKEN) return 'unauthorized';
 
     try {
+      const headers = { 
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json'
+      };
+
       // STEP 1: Always fetch the latest SHA immediately before writing. 
-      // This is crucial for multi-user environments (you and your friend).
       const headResponse = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
-        {
-          headers: { 
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json'
-          },
-        }
+        { headers }
       );
       
       let currentSha = this.lastSha;
       if (headResponse.ok) {
         const headData = await headResponse.json();
         currentSha = headData.sha;
+      } else if (headResponse.status === 403) {
+        return 'rate-limited';
       }
 
       // STEP 2: Prepare the content
@@ -89,9 +95,8 @@ class GitHubStorageService {
         {
           method: 'PUT',
           headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
+            ...headers,
             'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
           },
           body: JSON.stringify({
             message: `arena_sync: update registry ${new Date().toISOString()}`,
@@ -103,6 +108,7 @@ class GitHubStorageService {
       );
 
       if (!putResponse.ok) {
+        if (putResponse.status === 403) return 'rate-limited';
         const errData = await putResponse.json();
         console.error('GitHub API Save Conflict:', errData);
         return 'conflict';

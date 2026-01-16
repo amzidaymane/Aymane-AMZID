@@ -79,7 +79,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player, onDelete, onEdit
         ></div>
       </div>
 
-      <div className="absolute -left-4 top-1/2 -translate-y-1/2 opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-1000 rotate-[-15deg] group-hover:rotate-0 pointer-events-none">
+      {/* Reduced opacity of background logo by 10% (from 0.18/0.23 to 0.08/0.13) */}
+      <div className="absolute -left-4 top-1/2 -translate-y-1/2 opacity-[0.08] group-hover:opacity-[0.13] transition-all duration-1000 rotate-[-15deg] group-hover:rotate-0 pointer-events-none">
         <img src={team.logo} alt="" className="w-56 h-56 object-contain grayscale" />
       </div>
 

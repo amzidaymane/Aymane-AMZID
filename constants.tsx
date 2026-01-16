@@ -65,7 +65,7 @@ export const TEAMS: Team[] = [
     colors: 'from-[#002395] to-[#FFFFFF] text-white', 
     secondary: '#ED2939', 
     logoText: 'FRA', 
-    logo: 'https://upload.wikimedia.org/wikipedia/fr/thumb/b/b1/Logo_F%C3%A9d%C3%A9ration_Fran%C3%A7aise_Football_2018.svg/512px-Logo_F%C3%A9d%C3%A9ration_Fran%C3%A7aise_Football_2018.svg.png' 
+    logo: 'https://upload.wikimedia.org/wikipedia/fr/thumb/4/43/Logo_%C3%89quipe_France_Football_2018.svg/langfr-250px-Logo_%C3%89quipe_France_Football_2018.svg.png' 
   },
 ];
 

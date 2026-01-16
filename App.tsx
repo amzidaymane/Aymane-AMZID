@@ -4,7 +4,7 @@ import {
   Trophy, Users, Search, 
   Terminal, RefreshCcw, Cloud, CloudOff, CloudSync,
   LayoutGrid, Swords, Activity, Calendar, Lock, Unlock,
-  Wifi, WifiOff, AlertTriangle
+  Wifi, WifiOff, AlertTriangle, Wand2
 } from 'lucide-react';
 import { Player, Match, ViewMode, Fixture } from './types';
 import { INITIAL_PLAYERS, TEAMS } from './constants';
@@ -58,7 +58,6 @@ export default function FC26App() {
     const remoteData = await githubStorage.loadData();
     
     if (remoteData) {
-      // If remote version is newer, update local state
       if (remoteData.version > lastRemoteVersion.current) {
         setPlayers(remoteData.players);
         setFixtures(remoteData.fixtures || []);
@@ -73,22 +72,19 @@ export default function FC26App() {
     }
   }, []);
 
-  // Aggressive polling for viewers (your friend)
+  // Polling logic
   useEffect(() => {
     hydrateFromRemote();
+    const pollInterval = isAuthorized ? 15000 : 45000;
     const interval = setInterval(() => {
-      // Viewers poll every 15 seconds for changes
-      if (!isAuthorized) {
-        hydrateFromRemote(true);
-      }
-    }, 15000);
+      hydrateFromRemote(true);
+    }, pollInterval);
     return () => clearInterval(interval);
   }, [hydrateFromRemote, isAuthorized]);
 
-  // Autosave for the Manager
+  // Autosave
   useEffect(() => {
     if (isAuthorized) {
-      // Don't sync on the first mount to avoid overwriting remote with local defaults
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
@@ -110,10 +106,68 @@ export default function FC26App() {
           localStorage.setItem('fc26_fixtures', JSON.stringify(fixtures));
         }
         setSyncStatus(status);
-      }, 1500);
+      }, 2000);
       return () => clearTimeout(timeoutId);
     }
   }, [players, fixtures, isAuthorized]);
+
+  const generateTournamentSchedule = () => {
+    if (!window.confirm("ARENA SCHEDULER: Generate unique group-stage pairings for all athletes?")) return;
+    
+    const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const allPairings: { p1: number, p2: number }[] = [];
+
+    // 1. Generate intra-group pairings
+    groupNames.forEach(groupName => {
+      const groupPlayers = players.filter(p => p.group === groupName);
+      for (let i = 0; i < groupPlayers.length; i++) {
+        for (let j = i + 1; j < groupPlayers.length; j++) {
+          allPairings.push({ p1: groupPlayers[i].id, p2: groupPlayers[j].id });
+        }
+      }
+    });
+
+    // 2. Determine Start Date (Next Monday)
+    const nextMonday = new Date();
+    // Monday is 1. If today is Monday, get the *next* one.
+    nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7 || 7));
+    nextMonday.setHours(10, 0, 0, 0);
+
+    const newFixtures: Fixture[] = [];
+    let currentDate = new Date(nextMonday);
+    let matchCounterToday = 0;
+
+    allPairings.forEach((pair, idx) => {
+      // Skip weekends if the increment landed on one
+      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setHours(10, 0, 0, 0);
+      }
+
+      newFixtures.push({
+        id: `auto-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+        p1Id: pair.p1,
+        p2Id: pair.p2,
+        status: 'scheduled',
+        timestamp: new Date(currentDate).getTime()
+      });
+
+      matchCounterToday++;
+      
+      if (matchCounterToday >= 4) {
+        matchCounterToday = 0;
+        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setHours(10, 0, 0, 0); // Reset time for next day
+      } else {
+        // Increment time for next match of the same day (e.g., 1 hour gaps)
+        currentDate.setHours(currentDate.getHours() + 1);
+      }
+    });
+
+    setFixtures(newFixtures);
+    alert(`LOGISTICS SUCCESS: ${newFixtures.length} intra-group matches scheduled starting Monday.`);
+    setView(ViewMode.FIXTURES);
+  };
 
   const handleSavePlayer = (player: Player) => {
     if (editingPlayer) {
@@ -198,19 +252,19 @@ export default function FC26App() {
             <div className="flex items-center space-x-6">
               <div className="hidden sm:flex flex-col items-end">
                  <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : syncStatus === 'conflict' ? 'bg-red-500' : 'bg-slate-700'}`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : (syncStatus === 'conflict' || syncStatus === 'rate-limited') ? 'bg-red-500' : 'bg-slate-700'}`}></div>
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">
-                      {syncStatus === 'conflict' ? 'SYNC ERROR' : 'LIVE FEED'}
+                      {syncStatus === 'rate-limited' ? 'API THROTTLED' : syncStatus === 'conflict' ? 'SYNC ERROR' : 'LIVE FEED'}
                     </span>
                  </div>
                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                   {syncStatus === 'syncing' ? 'PUSHING DATA...' : syncStatus === 'conflict' ? 'RETRYING...' : 'CLOUD STABLE'}
+                   {syncStatus === 'syncing' ? 'PUSHING DATA...' : syncStatus === 'rate-limited' ? 'RATE LIMIT REACHED' : 'CLOUD STABLE'}
                  </span>
               </div>
               <button 
                 onClick={() => hydrateFromRemote()}
                 title="Force Remote Pull"
-                className={`p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all ${syncStatus === 'conflict' ? 'text-red-500 border-red-500/50 bg-red-500/10' : 'text-slate-400 hover:text-blue-400'}`}
+                className={`p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all ${(syncStatus === 'conflict' || syncStatus === 'rate-limited') ? 'text-red-500 border-red-500/50 bg-red-500/10' : 'text-slate-400 hover:text-blue-400'}`}
               >
                 <RefreshCcw size={16} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
               </button>
@@ -219,17 +273,17 @@ export default function FC26App() {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-          {syncStatus === 'conflict' && (
-            <div className="mb-8 p-4 bg-red-600/10 border border-red-600/50 rounded-sm flex items-center justify-between animate-pulse">
-               <div className="flex items-center gap-4 text-red-500">
+          {syncStatus === 'rate-limited' && (
+            <div className="mb-8 p-4 bg-amber-600/10 border border-amber-600/50 rounded-sm flex items-center justify-between animate-pulse">
+               <div className="flex items-center gap-4 text-amber-500">
                   <AlertTriangle size={20} />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Storage Conflict: Multiple users editing. Tap Refresh to resolve.</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">GitHub Rate Limit Exceeded: Public API access restricted. Results may not sync temporarily.</p>
                </div>
-               <button onClick={() => hydrateFromRemote()} className="px-6 py-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">RE-SYNC</button>
+               <button onClick={() => hydrateFromRemote()} className="px-6 py-2 bg-amber-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">RETRY SYNC</button>
             </div>
           )}
 
-          <div className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mb-20 grid grid-cols-1 md:grid-cols-3 gap-6">
             <button 
               onClick={() => setView(view === ViewMode.GROUPS ? ViewMode.ROSTER : ViewMode.GROUPS)}
               className={`relative overflow-hidden group border transition-all duration-500 rounded-sm p-10 flex flex-col items-center justify-center space-y-4 ${
@@ -261,6 +315,18 @@ export default function FC26App() {
                 </h3>
               </div>
             </button>
+
+            {isAuthorized && (
+              <button 
+                onClick={generateTournamentSchedule}
+                className="relative overflow-hidden group border border-amber-600/20 bg-amber-600/5 hover:bg-amber-600/10 transition-all duration-500 rounded-sm p-10 flex flex-col items-center justify-center space-y-4"
+              >
+                <Wand2 size={24} className="text-amber-500" />
+                <div className="text-center">
+                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">AUTO-SCHEDULE</h3>
+                </div>
+              </button>
+            )}
           </div>
 
           {view === ViewMode.GROUPS ? (

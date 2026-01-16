@@ -7,7 +7,7 @@ import {
   Trash2, Check, X, UserPlus, 
   Zap, ChevronLeft, ShieldCheck, Play,
   Edit3, Info, AlertTriangle, ChevronUp, ChevronDown,
-  Monitor, Terminal, AlertCircle, RefreshCw
+  Monitor, Terminal, AlertCircle, RefreshCw, Layers
 } from 'lucide-react';
 
 interface MatchCenterProps {
@@ -27,11 +27,7 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
   const [isAdding, setIsAdding] = useState(false);
 
   const addFixture = () => {
-    // Basic validation
-    if (!p1Id || !p2Id || p1Id === p2Id) {
-      console.warn("Invalid fixture selection");
-      return;
-    }
+    if (!p1Id || !p2Id || p1Id === p2Id) return;
     
     const newFixture: Fixture = {
       id: Math.random().toString(36).substring(2, 11),
@@ -41,11 +37,7 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
       timestamp: Date.now(),
     };
     
-    // Add to the top of the list
-    const updatedFixtures = [newFixture, ...fixtures];
-    onUpdateFixtures(updatedFixtures);
-    
-    // Reset local state
+    onUpdateFixtures([newFixture, ...fixtures]);
     setP1Id(0);
     setP2Id(0);
     setIsAdding(false);
@@ -76,6 +68,13 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
   const deleteFixture = (id: string) => {
     onUpdateFixtures(fixtures.filter(f => f.id !== id));
   };
+
+  const groupedFixtures = fixtures.reduce((acc, f) => {
+    const date = new Date(f.timestamp).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(f);
+    return acc;
+  }, {} as Record<string, Fixture[]>);
 
   return (
     <div className="space-y-12 animate-in slide-in-from-bottom-4 duration-700 pb-40">
@@ -128,12 +127,10 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
                     {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                  </select>
               </div>
-
               <div className="flex flex-col items-center">
                  <Swords size={32} className="text-indigo-600/30" />
                  <span className="text-[8px] font-black text-slate-700 uppercase tracking-[0.4em] mt-3 italic">Versus</span>
               </div>
-
               <div className="space-y-4">
                  <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">Away Contender</label>
                  <select 
@@ -146,7 +143,6 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
                  </select>
               </div>
            </div>
-
            <div className="mt-10 pt-10 border-t border-white/5 flex justify-center">
               <button 
                 onClick={addFixture}
@@ -159,28 +155,33 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-12">
-        <div className="flex items-center gap-4">
-           <Monitor size={16} className="text-slate-800" />
-           <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.5em] italic">Active Engagement Logs</span>
-           <div className="flex-1 h-px bg-white/5"></div>
-        </div>
-        
-        {fixtures.length === 0 ? (
+      <div className="space-y-24">
+        {Object.keys(groupedFixtures).length === 0 ? (
           <div className="py-48 flex flex-col items-center justify-center space-y-6 opacity-20 border border-dashed border-white/10 rounded-sm">
             <Swords size={48} className="text-slate-500" />
             <p className="text-[10px] font-black uppercase tracking-[0.6em]">Registry Clear: No Pending Matches</p>
           </div>
         ) : (
-          fixtures.map(fixture => (
-            <MatchBanner 
-              key={fixture.id} 
-              fixture={fixture} 
-              players={players} 
-              onFinalize={finalizeMatch} 
-              onDelete={deleteFixture} 
-              isAuthorized={isAuthorized}
-            />
+          (Object.entries(groupedFixtures) as [string, Fixture[]][]).map(([date, dailyFixtures]) => (
+            <div key={date} className="space-y-12">
+              <div className="flex items-center gap-6">
+                 <Calendar size={16} className="text-indigo-500" />
+                 <h3 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">{date}</h3>
+                 <div className="flex-1 h-px bg-white/5"></div>
+              </div>
+              <div className="grid grid-cols-1 gap-12">
+                {dailyFixtures.map(fixture => (
+                  <MatchBanner 
+                    key={fixture.id} 
+                    fixture={fixture} 
+                    players={players} 
+                    onFinalize={finalizeMatch} 
+                    onDelete={deleteFixture} 
+                    isAuthorized={isAuthorized}
+                  />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>
@@ -213,29 +214,20 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
 
   return (
     <div className="group relative w-full min-h-[400px] md:min-h-[480px] rounded-sm overflow-hidden border border-white/5 bg-[#010409] transition-all duration-700 hover:border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)]">
-      
       <div className="absolute inset-0 flex">
         <div className="relative w-1/2 h-full overflow-hidden">
           <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#010409] via-transparent to-transparent"></div>
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#010409] via-transparent to-transparent"></div>
-          <img 
-            src={p1.avatar} 
-            className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110 opacity-30 group-hover:opacity-60" 
-            style={{ objectPosition: p1.alignment ? `${p1.alignment.x}% ${p1.alignment.y}%` : 'center 20%' }}
-            alt="" 
-          />
-          <div className="absolute inset-0 mix-blend-color opacity-30" style={{ backgroundColor: t1?.secondary }}></div>
+          <img src={p1.avatar} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110 opacity-30 group-hover:opacity-60" style={{ objectPosition: p1.alignment ? `${p1.alignment.x}% ${p1.alignment.y}%` : 'center 20%' }} alt="" />
+          {/* Increased overlay opacity from 0.3 to 0.45 */}
+          <div className="absolute inset-0 mix-blend-color opacity-[0.45]" style={{ backgroundColor: t1?.secondary }}></div>
         </div>
         <div className="relative w-1/2 h-full overflow-hidden">
           <div className="absolute inset-0 z-10 bg-gradient-to-l from-[#010409] via-transparent to-transparent"></div>
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#010409] via-transparent to-transparent"></div>
-          <img 
-            src={p2.avatar} 
-            className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110 opacity-30 group-hover:opacity-60" 
-            style={{ objectPosition: p2.alignment ? `${p2.alignment.x}% ${p2.alignment.y}%` : 'center 20%' }}
-            alt="" 
-          />
-          <div className="absolute inset-0 mix-blend-color opacity-30" style={{ backgroundColor: t2?.secondary }}></div>
+          <img src={p2.avatar} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110 opacity-30 group-hover:opacity-60" style={{ objectPosition: p2.alignment ? `${p2.alignment.x}% ${p2.alignment.y}%` : 'center 20%' }} alt="" />
+          {/* Increased overlay opacity from 0.3 to 0.45 */}
+          <div className="absolute inset-0 mix-blend-color opacity-[0.45]" style={{ backgroundColor: t2?.secondary }}></div>
         </div>
       </div>
 
@@ -243,34 +235,16 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
         <div className="absolute top-0 right-0 z-[120] pointer-events-auto">
           {showConfirmDelete ? (
             <div className="flex animate-in slide-in-from-right-4 duration-300">
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDelete(fixture.id); }}
-                className="bg-red-600 text-white px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] italic flex items-center gap-3 hover:bg-red-500 transition-all border-b border-l border-white/20"
-              >
-                <AlertCircle size={16} /> CONFIRM PURGE
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(false); }}
-                className="bg-slate-900 text-slate-500 px-6 py-6 text-[10px] font-black uppercase tracking-[0.4em] italic hover:text-white transition-all border-b border-white/10"
-              >
-                CANCEL
-              </button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(fixture.id); }} className="bg-red-600 text-white px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] italic flex items-center gap-3 hover:bg-red-500 transition-all border-b border-l border-white/20"><AlertCircle size={16} /> CONFIRM PURGE</button>
+              <button onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(false); }} className="bg-slate-900 text-slate-500 px-6 py-6 text-[10px] font-black uppercase tracking-[0.4em] italic hover:text-white transition-all border-b border-white/10">CANCEL</button>
             </div>
           ) : (
-            <button 
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
-              className="p-8 bg-red-600/5 hover:bg-red-600 border-l border-b border-white/5 text-red-500/20 hover:text-white rounded-bl-sm transition-all shadow-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer group/delbtn"
-              title="Delete Match"
-            >
-               <Trash2 size={24} strokeWidth={2.5} className="group-hover/delbtn:scale-110 transition-transform" />
-            </button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }} className="p-8 bg-red-600/5 hover:bg-red-600 border-l border-b border-white/5 text-red-500/20 hover:text-white rounded-bl-sm transition-all shadow-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer group/delbtn" title="Delete Match"><Trash2 size={24} strokeWidth={2.5} className="group-hover/delbtn:scale-110 transition-transform" /></button>
           )}
         </div>
       )}
 
       <div className="relative z-40 h-full flex flex-col justify-between py-12 px-8 md:px-20 pointer-events-none">
-        
         <div className="w-full flex justify-between items-start">
            <div className="flex items-center gap-6">
               <div className="p-4 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-sm shadow-xl min-w-[70px] min-h-[70px] flex items-center justify-center">
@@ -287,7 +261,12 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                 <div className={`w-2 h-2 rounded-full ${isFinished ? 'bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,1)]' : 'bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.5)]'}`}></div>
                 <span className="text-[10px] font-black text-white uppercase tracking-[0.6em] italic">{isFinished ? 'STAMPED' : 'AWAITING'}</span>
               </div>
-              <span className="text-[8px] font-black text-slate-800 uppercase tracking-widest">{fixture.id}</span>
+              {p1.group === p2.group && (
+                <div className="flex items-center gap-2 mt-2 px-4 py-1 bg-white/5 border border-white/10 rounded-full">
+                  <Layers size={10} className="text-indigo-400" />
+                  <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest italic">GROUP {p1.group} BATTLE</span>
+                </div>
+              )}
            </div>
 
            <div className="flex flex-row-reverse items-center gap-6 text-right">
@@ -309,13 +288,11 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                       <span className="text-9xl md:text-[180px] font-black text-white italic tracking-tighter text-glow drop-shadow-[0_20px_60px_rgba(255,255,255,0.2)] leading-none">{fixture.score1}</span>
                       <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] mt-6 italic">FINAL SCORE</span>
                    </div>
-                   
                    <div className="flex flex-col items-center opacity-20">
                       <div className="w-px h-32 bg-gradient-to-b from-transparent via-white to-transparent"></div>
                       <span className="text-2xl font-black text-white italic tracking-[0.6em] py-8">VS</span>
                       <div className="w-px h-32 bg-gradient-to-b from-transparent via-white to-transparent"></div>
                    </div>
-
                    <div className="flex flex-col items-center">
                       <span className="text-9xl md:text-[180px] font-black text-slate-900 italic tracking-tighter leading-none">{fixture.score2}</span>
                       <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.5em] mt-6 italic">AWAY RECORD</span>
@@ -325,7 +302,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
           ) : isScoringMode && isAuthorized ? (
              <div className="flex flex-col items-center animate-in zoom-in duration-500 bg-[#020617]/95 backdrop-blur-3xl p-12 rounded-sm border border-indigo-500/30 shadow-[0_0_150px_rgba(0,0,0,1)] ring-1 ring-white/10 relative overflow-hidden group/hud">
                 <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-indigo-600 to-transparent"></div>
-                
                 <div className="flex items-center gap-12 md:gap-24">
                    <div className="flex flex-col items-center space-y-6">
                       <button onClick={() => setS1(s => s + 1)} className="p-5 bg-white/5 hover:bg-indigo-600 border border-white/10 hover:border-transparent rounded-sm text-indigo-400 hover:text-white transition-all transform active:scale-95"><ChevronUp size={32} /></button>
@@ -335,31 +311,14 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                       </div>
                       <button onClick={() => setS1(s => Math.max(0, s - 1))} className="p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm text-slate-700 hover:text-white transition-all transform active:scale-95"><ChevronDown size={32} /></button>
                    </div>
-
                    <div className="flex flex-col items-center gap-10">
                       <div className="flex flex-col items-center">
                          <RefreshCw size={24} className="text-indigo-400 mb-4 animate-spin-slow opacity-50" />
                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.6em] mb-4">PROCESSING</span>
                       </div>
-                      
-                      <button 
-                        onClick={() => {
-                           onFinalize(fixture.id, s1, s2);
-                           setIsScoringMode(false);
-                        }}
-                        className="w-28 h-28 bg-white text-black rounded-sm flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-[0_30px_60px_rgba(0,0,0,0.8)] group/finalize ring-4 ring-white/10 hover:ring-indigo-500/20"
-                      >
-                         <Check size={56} strokeWidth={4} className="group-hover/finalize:scale-125 transition-transform duration-500" />
-                      </button>
-
-                      <button 
-                        onClick={() => setIsScoringMode(false)}
-                        className="px-10 py-4 bg-slate-900 border border-white/5 text-slate-600 hover:text-red-500 hover:bg-red-950/30 transition-all text-[10px] font-black uppercase tracking-[0.5em] italic"
-                      >
-                         DISCONNECT
-                      </button>
+                      <button onClick={() => { onFinalize(fixture.id, s1, s2); setIsScoringMode(false); }} className="w-28 h-28 bg-white text-black rounded-sm flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-[0_30px_60px_rgba(0,0,0,0.8)] group/finalize ring-4 ring-white/10 hover:ring-indigo-500/20"><Check size={56} strokeWidth={4} className="group-hover/finalize:scale-125 transition-transform duration-500" /></button>
+                      <button onClick={() => setIsScoringMode(false)} className="px-10 py-4 bg-slate-900 border border-white/5 text-slate-600 hover:text-red-500 hover:bg-red-950/30 transition-all text-[10px] font-black uppercase tracking-[0.5em] italic">DISCONNECT</button>
                    </div>
-
                    <div className="flex flex-col items-center space-y-6">
                       <button onClick={() => setS2(s => s + 1)} className="p-5 bg-white/5 hover:bg-indigo-600 border border-white/10 hover:border-transparent rounded-sm text-indigo-400 hover:text-white transition-all transform active:scale-95"><ChevronUp size={32} /></button>
                       <div className="w-40 h-40 bg-black border-2 border-indigo-500/30 rounded-sm flex items-center justify-center relative shadow-[inset_0_0_40px_rgba(79,70,229,0.1)]">
@@ -374,21 +333,14 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
              <div className="flex flex-col items-center">
                 <div className="relative group/vs flex items-center justify-center">
                    <div className="absolute inset-0 bg-indigo-600/10 blur-[100px] opacity-0 group-hover/vs:opacity-100 transition-opacity duration-1000"></div>
-                   <span className="text-9xl md:text-[220px] font-black text-white/5 italic tracking-tighter select-none uppercase">Arena</span>
+                   <span className="text-9xl md:text-[220px] font-black text-white/10 italic tracking-tighter select-none uppercase">Arena</span>
                    <div className="absolute flex items-center justify-center">
                       <div className="h-2 w-64 bg-gradient-to-r from-transparent via-indigo-600 to-transparent absolute blur-2xl opacity-40"></div>
                       <Swords size={72} className="text-white drop-shadow-[0_0_40px_rgba(99,102,241,1)] animate-in zoom-in duration-1000" />
                    </div>
                 </div>
-                
                 {isAuthorized ? (
-                  <button 
-                    onClick={() => setIsScoringMode(true)}
-                    className="mt-16 px-20 py-6 bg-white text-black text-[12px] font-black uppercase tracking-[0.6em] italic hover:bg-indigo-600 hover:text-white transition-all rounded-sm shadow-2xl relative overflow-hidden group/entrybtn"
-                  >
-                     <span className="relative z-10">ENTER OUTCOME</span>
-                     <div className="absolute inset-0 bg-indigo-500 translate-x-[-100%] group-hover/entrybtn:translate-x-0 transition-transform duration-500 -z-0"></div>
-                  </button>
+                  <button onClick={() => setIsScoringMode(true)} className="mt-16 px-20 py-6 bg-white text-black text-[12px] font-black uppercase tracking-[0.6em] italic hover:bg-indigo-600 hover:text-white transition-all rounded-sm shadow-2xl relative overflow-hidden group/entrybtn"><span className="relative z-10">ENTER OUTCOME</span><div className="absolute inset-0 bg-indigo-500 translate-x-[-100%] group-hover/entrybtn:translate-x-0 transition-transform duration-500 -z-0"></div></button>
                 ) : (
                    <div className="mt-12 flex items-center gap-4 opacity-30">
                       <Terminal size={14} className="text-slate-700" />
@@ -407,7 +359,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em]">{new Date(fixture.timestamp).toLocaleString()}</span>
               </div>
            </div>
-           
            <div className="flex items-center gap-8 opacity-20 group-hover:opacity-100 transition-opacity duration-500">
               <div className="text-right">
                 <span className="block text-[9px] font-black text-slate-800 group-hover:text-indigo-900 uppercase tracking-widest mb-1 transition-colors">SECTOR IDENTIFIER</span>
