@@ -22,22 +22,30 @@ interface MatchCenterProps {
 export const MatchCenter: React.FC<MatchCenterProps> = ({ 
   players, fixtures, onUpdateFixtures, onUpdatePlayer, onBack, isAuthorized = false
 }) => {
-  const [p1Id, setP1Id] = useState<number | 0>(0);
-  const [p2Id, setP2Id] = useState<number | 0>(0);
+  const [p1Id, setP1Id] = useState<number>(0);
+  const [p2Id, setP2Id] = useState<number>(0);
   const [isAdding, setIsAdding] = useState(false);
 
   const addFixture = () => {
-    if (!p1Id || !p2Id || p1Id === p2Id) return;
+    // Basic validation
+    if (!p1Id || !p2Id || p1Id === p2Id) {
+      console.warn("Invalid fixture selection");
+      return;
+    }
     
     const newFixture: Fixture = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       p1Id: p1Id,
       p2Id: p2Id,
       status: 'scheduled',
       timestamp: Date.now(),
     };
     
-    onUpdateFixtures([newFixture, ...fixtures]);
+    // Add to the top of the list
+    const updatedFixtures = [newFixture, ...fixtures];
+    onUpdateFixtures(updatedFixtures);
+    
+    // Reset local state
     setP1Id(0);
     setP2Id(0);
     setIsAdding(false);
@@ -88,7 +96,6 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
           </div>
         </div>
 
-        {/* AUTHORIZATION GATE: CREATE BUTTON */}
         {isAuthorized && (
           <button 
             onClick={() => setIsAdding(!isAdding)}
@@ -207,7 +214,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
   return (
     <div className="group relative w-full min-h-[400px] md:min-h-[480px] rounded-sm overflow-hidden border border-white/5 bg-[#010409] transition-all duration-700 hover:border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)]">
       
-      {/* Dynamic Cinematic Background */}
       <div className="absolute inset-0 flex">
         <div className="relative w-1/2 h-full overflow-hidden">
           <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#010409] via-transparent to-transparent"></div>
@@ -233,7 +239,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
         </div>
       </div>
 
-      {/* AUTHORIZATION GATE: DELETE BUTTON */}
       {isAuthorized && (
         <div className="absolute top-0 right-0 z-[120] pointer-events-auto">
           {showConfirmDelete ? (
@@ -264,10 +269,8 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
         </div>
       )}
 
-      {/* Arena HUD Layer */}
       <div className="relative z-40 h-full flex flex-col justify-between py-12 px-8 md:px-20 pointer-events-none">
         
-        {/* Header - Club Crests */}
         <div className="w-full flex justify-between items-start">
            <div className="flex items-center gap-6">
               <div className="p-4 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-sm shadow-xl min-w-[70px] min-h-[70px] flex items-center justify-center">
@@ -298,7 +301,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
            </div>
         </div>
 
-        {/* Centerpiece Scoring & Battle Terminal */}
         <div className="flex-1 flex flex-col items-center justify-center pointer-events-auto">
           {isFinished ? (
              <div className="flex flex-col items-center animate-in zoom-in duration-1000">
@@ -341,7 +343,10 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                       </div>
                       
                       <button 
-                        onClick={() => onFinalize(fixture.id, s1, s2)}
+                        onClick={() => {
+                           onFinalize(fixture.id, s1, s2);
+                           setIsScoringMode(false);
+                        }}
                         className="w-28 h-28 bg-white text-black rounded-sm flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-[0_30px_60px_rgba(0,0,0,0.8)] group/finalize ring-4 ring-white/10 hover:ring-indigo-500/20"
                       >
                          <Check size={56} strokeWidth={4} className="group-hover/finalize:scale-125 transition-transform duration-500" />
@@ -376,7 +381,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
                    </div>
                 </div>
                 
-                {/* AUTHORIZATION GATE: SCORING BUTTON */}
                 {isAuthorized ? (
                   <button 
                     onClick={() => setIsScoringMode(true)}
@@ -395,7 +399,6 @@ const MatchBanner: React.FC<MatchBannerProps> = ({ fixture, players, onFinalize,
           )}
         </div>
 
-        {/* Footer Info */}
         <div className="w-full flex justify-between items-end pointer-events-auto">
            <div className="flex items-center gap-5 opacity-40 group-hover:opacity-100 transition-opacity duration-500">
               <Calendar size={18} className="text-indigo-400" />

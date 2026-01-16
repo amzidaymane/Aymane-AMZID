@@ -6,7 +6,6 @@ const REPO_NAME = 'PGD-FC';
 const FILE_PATH = 'db.json';
 const BRANCH = 'main';
 
-// The GitHub token is assumed to be provided via environment
 const GITHUB_TOKEN = (process.env as any).GITHUB_TOKEN || '';
 
 export interface AppData {
@@ -16,35 +15,41 @@ export interface AppData {
   version: number;
 }
 
-export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'unauthorized';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'unauthorized' | 'conflict';
 
 class GitHubStorageService {
   private lastSha: string | null = null;
 
   async loadData(): Promise<AppData | null> {
     try {
+      // Add a cache buster to the URL to ensure we always get the latest from GitHub's servers
       const response = await fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`,
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
         {
-          headers: GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {},
+          headers: GITHUB_TOKEN ? { 
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
+          } : {
+            'Accept': 'application/vnd.github.v3+json'
+          },
         }
       );
 
       if (!response.ok) {
         if (response.status === 404) return null;
-        throw new Error('Failed to fetch data from GitHub');
+        throw new Error(`GitHub Load Error: ${response.status}`);
       }
 
       const data = await response.json();
       this.lastSha = data.sha;
-      const content = atob(data.content);
+      const content = decodeURIComponent(escape(atob(data.content)));
       const parsed = JSON.parse(content);
       
       return {
         players: parsed.players || [],
         matches: parsed.matches || [],
         fixtures: parsed.fixtures || [],
-        version: parsed.version || Date.now()
+        version: parsed.version || 0
       };
     } catch (error) {
       console.error('Storage Load Error:', error);
@@ -56,38 +61,52 @@ class GitHubStorageService {
     if (!GITHUB_TOKEN) return 'unauthorized';
 
     try {
-      const getResponse = await fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`,
+      // STEP 1: Always fetch the latest SHA immediately before writing. 
+      // This is crucial for multi-user environments (you and your friend).
+      const headResponse = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
         {
-          headers: { Authorization: `token ${GITHUB_TOKEN}` },
+          headers: { 
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
+          },
         }
       );
       
-      if (getResponse.ok) {
-        const existingData = await getResponse.json();
-        this.lastSha = existingData.sha;
+      let currentSha = this.lastSha;
+      if (headResponse.ok) {
+        const headData = await headResponse.json();
+        currentSha = headData.sha;
       }
 
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+      // STEP 2: Prepare the content
+      const jsonString = JSON.stringify(data, null, 2);
+      const content = btoa(unescape(encodeURIComponent(jsonString)));
       
+      // STEP 3: Push to GitHub
       const putResponse = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
         {
           method: 'PUT',
           headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
+            'Authorization': `token ${GITHUB_TOKEN}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
           },
           body: JSON.stringify({
-            message: `chore: automatic database sync ${new Date().toISOString()}`,
+            message: `arena_sync: update registry ${new Date().toISOString()}`,
             content,
-            sha: this.lastSha || undefined,
+            sha: currentSha || undefined,
             branch: BRANCH,
           }),
         }
       );
 
-      if (!putResponse.ok) throw new Error('Failed to save to GitHub');
+      if (!putResponse.ok) {
+        const errData = await putResponse.json();
+        console.error('GitHub API Save Conflict:', errData);
+        return 'conflict';
+      }
       
       const result = await putResponse.json();
       this.lastSha = result.content.sha;

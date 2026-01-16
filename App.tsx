@@ -4,7 +4,7 @@ import {
   Trophy, Users, Search, 
   Terminal, RefreshCcw, Cloud, CloudOff, CloudSync,
   LayoutGrid, Swords, Activity, Calendar, Lock, Unlock,
-  Wifi, WifiOff
+  Wifi, WifiOff, AlertTriangle
 } from 'lucide-react';
 import { Player, Match, ViewMode, Fixture } from './types';
 import { INITIAL_PLAYERS, TEAMS } from './constants';
@@ -18,7 +18,6 @@ export default function FC26App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   
-  // Initialize from LocalStorage but mark as "pending remote"
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
       const saved = localStorage.getItem('fc26_players');
@@ -43,6 +42,7 @@ export default function FC26App() {
   const [search, setSearch] = useState('');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const lastRemoteVersion = useRef<number>(0);
+  const isInitialMount = useRef(true);
 
   // Authorization trigger
   useEffect(() => {
@@ -51,20 +51,19 @@ export default function FC26App() {
     }
   }, [accessCode]);
 
-  // Unified data loader - Ensures remote data is the absolute source of truth
+  // Unified data loader
   const hydrateFromRemote = useCallback(async (isSilent = false) => {
     if (!isSilent) setSyncStatus('syncing');
     
     const remoteData = await githubStorage.loadData();
     
     if (remoteData) {
-      // Only update state if the remote version is newer than what we have
+      // If remote version is newer, update local state
       if (remoteData.version > lastRemoteVersion.current) {
         setPlayers(remoteData.players);
         setFixtures(remoteData.fixtures || []);
         lastRemoteVersion.current = remoteData.version;
         
-        // Update local storage to match remote
         localStorage.setItem('fc26_players', JSON.stringify(remoteData.players));
         localStorage.setItem('fc26_fixtures', JSON.stringify(remoteData.fixtures || []));
       }
@@ -74,22 +73,27 @@ export default function FC26App() {
     }
   }, []);
 
-  // REAL-TIME POLLING: Check for updates every 30 seconds
+  // Aggressive polling for viewers (your friend)
   useEffect(() => {
-    hydrateFromRemote(); // Initial pull
-    
+    hydrateFromRemote();
     const interval = setInterval(() => {
-      // If we are authorized, we are the ones pushing, so we poll less aggressively
-      // If we are a viewer (friend), we poll every 30s to see updates
-      hydrateFromRemote(true);
-    }, 30000);
-    
+      // Viewers poll every 15 seconds for changes
+      if (!isAuthorized) {
+        hydrateFromRemote(true);
+      }
+    }, 15000);
     return () => clearInterval(interval);
-  }, [hydrateFromRemote]);
+  }, [hydrateFromRemote, isAuthorized]);
 
-  // Save to GitHub (Only for authorized manager)
+  // Autosave for the Manager
   useEffect(() => {
     if (isAuthorized) {
+      // Don't sync on the first mount to avoid overwriting remote with local defaults
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+      }
+
       const timeoutId = setTimeout(async () => {
         setSyncStatus('syncing');
         const newVersion = Date.now();
@@ -106,7 +110,7 @@ export default function FC26App() {
           localStorage.setItem('fc26_fixtures', JSON.stringify(fixtures));
         }
         setSyncStatus(status);
-      }, 2000); // 2 second debounce for autosave
+      }, 1500);
       return () => clearTimeout(timeoutId);
     }
   }, [players, fixtures, isAuthorized]);
@@ -145,10 +149,6 @@ export default function FC26App() {
     );
   }, [players, search]);
 
-  const sortedPlayers = useMemo(() => {
-    return [...players].sort((a, b) => (b.wins * 3) - (a.wins * 3) || a.losses - b.losses || b.wins - a.wins);
-  }, [players]);
-
   return (
     <div className="min-h-screen bg-[#020617] font-sans selection:bg-white selection:text-black">
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -169,9 +169,9 @@ export default function FC26App() {
                 }}
                 className="h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(254,190,16,0.2)] hover:scale-105 transition-transform duration-500 cursor-pointer"
               />
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">
-                  PGD <span className="text-slate-600 not-italic tracking-[0.3em] font-light ml-2">FC26 TOURNAMENT</span>
+                  PGD <span className="text-slate-600 not-italic tracking-[0.3em] font-light ml-2 text-xs">FC26 TOURNAMENT</span>
                 </h1>
               </div>
             </div>
@@ -198,17 +198,19 @@ export default function FC26App() {
             <div className="flex items-center space-x-6">
               <div className="hidden sm:flex flex-col items-end">
                  <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}`}></div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">Shared Experience</span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : syncStatus === 'conflict' ? 'bg-red-500' : 'bg-slate-700'}`}></div>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">
+                      {syncStatus === 'conflict' ? 'SYNC ERROR' : 'LIVE FEED'}
+                    </span>
                  </div>
                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                   {syncStatus === 'syncing' ? 'UPDATING...' : 'LIVE FEED ACTIVE'}
+                   {syncStatus === 'syncing' ? 'PUSHING DATA...' : syncStatus === 'conflict' ? 'RETRYING...' : 'CLOUD STABLE'}
                  </span>
               </div>
               <button 
                 onClick={() => hydrateFromRemote()}
                 title="Force Remote Pull"
-                className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm text-slate-400 hover:text-blue-400 transition-all"
+                className={`p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all ${syncStatus === 'conflict' ? 'text-red-500 border-red-500/50 bg-red-500/10' : 'text-slate-400 hover:text-blue-400'}`}
               >
                 <RefreshCcw size={16} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
               </button>
@@ -217,7 +219,16 @@ export default function FC26App() {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-          {/* Main Display Controls */}
+          {syncStatus === 'conflict' && (
+            <div className="mb-8 p-4 bg-red-600/10 border border-red-600/50 rounded-sm flex items-center justify-between animate-pulse">
+               <div className="flex items-center gap-4 text-red-500">
+                  <AlertTriangle size={20} />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Storage Conflict: Multiple users editing. Tap Refresh to resolve.</p>
+               </div>
+               <button onClick={() => hydrateFromRemote()} className="px-6 py-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">RE-SYNC</button>
+            </div>
+          )}
+
           <div className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-6">
             <button 
               onClick={() => setView(view === ViewMode.GROUPS ? ViewMode.ROSTER : ViewMode.GROUPS)}
@@ -230,7 +241,7 @@ export default function FC26App() {
               <LayoutGrid size={24} className={view === ViewMode.GROUPS ? 'text-blue-400' : 'text-slate-500'} />
               <div className="text-center">
                 <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">
-                  {view === ViewMode.GROUPS ? 'CLOSE BRACKETS' : 'STANDINGS VIEW'}
+                  {view === ViewMode.GROUPS ? 'CLOSE STANDINGS' : 'VIEW STANDINGS'}
                 </h3>
               </div>
             </button>
@@ -246,13 +257,12 @@ export default function FC26App() {
               <Swords size={24} className={view === ViewMode.FIXTURES ? 'text-indigo-400' : 'text-slate-500'} />
               <div className="text-center">
                 <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">
-                  {view === ViewMode.FIXTURES ? 'CLOSE ARENA' : 'MATCH CENTER'}
+                  {view === ViewMode.FIXTURES ? 'CLOSE ARENA' : 'ENTER ARENA'}
                 </h3>
               </div>
             </button>
           </div>
 
-          {/* Render Views */}
           {view === ViewMode.GROUPS ? (
             <GroupStage 
               players={players} 
@@ -271,7 +281,7 @@ export default function FC26App() {
             />
           ) : view === ViewMode.ROSTER ? (
             <div className="space-y-12">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-white/5 pb-8">
                 <div className="flex items-center space-x-6">
                    <div className="h-[2px] w-12 bg-blue-600"></div>
                    <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
@@ -279,7 +289,7 @@ export default function FC26App() {
                 {isAuthorized && (
                   <button 
                     onClick={() => { setEditingPlayer(null); setIsModalOpen(true); }}
-                    className="px-8 py-3 bg-white text-black text-[9px] font-black uppercase tracking-[0.3em] italic hover:bg-blue-600 hover:text-white transition-all rounded-sm"
+                    className="px-8 py-3 bg-white text-black text-[9px] font-black uppercase tracking-[0.3em] italic hover:bg-blue-600 hover:text-white transition-all rounded-sm shadow-xl"
                   >
                     NEW ATHLETE ENTRY
                   </button>
@@ -298,11 +308,7 @@ export default function FC26App() {
                 ))}
               </div>
             </div>
-          ) : view === ViewMode.LEADERBOARD && (
-             <div className="max-w-5xl mx-auto space-y-16">
-               {/* Leaderboard content - existing logic */}
-             </div>
-          )}
+          ) : null}
         </main>
 
         <footer className="border-t border-white/5 py-12 bg-slate-950/30 backdrop-blur-xl mt-auto">
