@@ -1,5 +1,5 @@
 
-import { Team, Player } from './types';
+import { Team, Player, Fixture } from './types';
 import { PLAYER_IMAGE_REGISTRY } from './player-images';
 
 export const TEAMS: Team[] = [
@@ -90,6 +90,7 @@ const RAW_PLAYERS = [
   { name: 'Mohamed Amine Chaabani', teamId: 'psg', group: 'E' },
   { name: 'Saad Belkacemi', teamId: 'bar', group: 'E' },
   { name: 'Aymane AMZID', teamId: 'psg', group: 'E' },
+  { name: 'Ilyasse Mbarki', teamId: 'rm', group: 'E' },
   { name: 'Mohannad Briouel', teamId: 'liv', group: 'F' },
   { name: 'Nabil Lamkadem', teamId: 'rm', group: 'F' },
   { name: 'Amine Chbihi', teamId: 'rm', group: 'F' },
@@ -111,3 +112,47 @@ export const INITIAL_PLAYERS: Player[] = RAW_PLAYERS.map((p, i) => {
     avatar
   };
 });
+
+// Automatically generate a set of fixtures between group members
+export const PRE_SEEDED_FIXTURES: Fixture[] = (() => {
+  const fixtures: Fixture[] = [];
+  const groups = ['A', 'B', 'C', 'D', 'E', 'F'];
+  
+  // Start Monday, January 19, 2026 at 10:00 AM
+  let currentDate = new Date(2026, 0, 19, 10, 0, 0); 
+  let matchesToday = 0;
+
+  groups.forEach((groupName) => {
+    const groupMembers = INITIAL_PLAYERS.filter(p => p.group === groupName);
+    for (let i = 0; i < groupMembers.length; i++) {
+      for (let j = i + 1; j < groupMembers.length; j++) {
+        fixtures.push({
+          id: `seed-${groupName}-${i}-${j}`,
+          p1Id: groupMembers[i].id,
+          p2Id: groupMembers[j].id,
+          status: 'scheduled',
+          timestamp: currentDate.getTime()
+        });
+
+        matchesToday++;
+
+        // Each day can have up to 4 matches
+        if (matchesToday >= 4) {
+          matchesToday = 0;
+          currentDate.setDate(currentDate.getDate() + 1);
+          
+          // Skip weekends: if Saturday (6) or Sunday (0), move to next Monday
+          while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          currentDate.setHours(10, 0, 0); // Reset to morning session for new day
+        } else {
+          currentDate.setHours(currentDate.getHours() + 2); // Spread matches by 2 hours
+        }
+      }
+    }
+  });
+
+  // Return a randomized subset of 25 matches spread across the weekdays
+  return fixtures.sort(() => Math.random() - 0.5).slice(0, 25);
+})();

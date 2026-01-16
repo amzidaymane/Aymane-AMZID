@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   Trophy, Users, Search, 
-  Terminal, RefreshCcw, Cloud, CloudOff, CloudSync,
-  LayoutGrid, Swords, Activity, Calendar, Lock, Unlock,
-  Wifi, WifiOff, AlertTriangle, Wand2
+  RefreshCcw, 
+  LayoutGrid, Swords, Activity, 
+  Wifi, WifiOff, AlertTriangle, List, Grid3X3
 } from 'lucide-react';
-import { Player, Match, ViewMode, Fixture } from './types';
-import { INITIAL_PLAYERS, TEAMS } from './constants';
+import { Player, ViewMode, Fixture } from './types';
+import { INITIAL_PLAYERS, TEAMS, PRE_SEEDED_FIXTURES } from './constants';
 import { PlayerCard } from './components/PlayerCard';
 import { PlayerModal } from './components/PlayerModal';
 import { GroupStage } from './components/GroupStage';
@@ -17,6 +17,7 @@ import { githubStorage, SyncStatus, AppData } from './services/storage';
 export default function FC26App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessCode, setAccessCode] = useState('');
+  const [isListView, setIsListView] = useState(false);
   
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
@@ -30,9 +31,9 @@ export default function FC26App() {
   const [fixtures, setFixtures] = useState<Fixture[]>(() => {
     try {
       const saved = localStorage.getItem('fc26_fixtures');
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : PRE_SEEDED_FIXTURES;
     } catch (e) {
-      return [];
+      return PRE_SEEDED_FIXTURES;
     }
   });
   
@@ -44,25 +45,20 @@ export default function FC26App() {
   const lastRemoteVersion = useRef<number>(0);
   const isInitialMount = useRef(true);
 
-  // Authorization trigger
   useEffect(() => {
     if (accessCode === '959525') {
       setIsAuthorized(true);
     }
   }, [accessCode]);
 
-  // Unified data loader
   const hydrateFromRemote = useCallback(async (isSilent = false) => {
     if (!isSilent) setSyncStatus('syncing');
-    
     const remoteData = await githubStorage.loadData();
-    
     if (remoteData) {
       if (remoteData.version > lastRemoteVersion.current) {
         setPlayers(remoteData.players);
         setFixtures(remoteData.fixtures || []);
         lastRemoteVersion.current = remoteData.version;
-        
         localStorage.setItem('fc26_players', JSON.stringify(remoteData.players));
         localStorage.setItem('fc26_fixtures', JSON.stringify(remoteData.fixtures || []));
       }
@@ -72,33 +68,23 @@ export default function FC26App() {
     }
   }, []);
 
-  // Polling logic
   useEffect(() => {
     hydrateFromRemote();
     const pollInterval = isAuthorized ? 15000 : 45000;
-    const interval = setInterval(() => {
-      hydrateFromRemote(true);
-    }, pollInterval);
+    const interval = setInterval(() => hydrateFromRemote(true), pollInterval);
     return () => clearInterval(interval);
   }, [hydrateFromRemote, isAuthorized]);
 
-  // Autosave
   useEffect(() => {
     if (isAuthorized) {
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
       }
-
       const timeoutId = setTimeout(async () => {
         setSyncStatus('syncing');
         const newVersion = Date.now();
-        const data: AppData = { 
-          players, 
-          matches: [], 
-          fixtures, 
-          version: newVersion 
-        };
+        const data: AppData = { players, matches: [], fixtures, version: newVersion };
         const status = await githubStorage.saveData(data);
         if (status === 'synced') {
           lastRemoteVersion.current = newVersion;
@@ -110,64 +96,6 @@ export default function FC26App() {
       return () => clearTimeout(timeoutId);
     }
   }, [players, fixtures, isAuthorized]);
-
-  const generateTournamentSchedule = () => {
-    if (!window.confirm("ARENA SCHEDULER: Generate unique group-stage pairings for all athletes?")) return;
-    
-    const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'];
-    const allPairings: { p1: number, p2: number }[] = [];
-
-    // 1. Generate intra-group pairings
-    groupNames.forEach(groupName => {
-      const groupPlayers = players.filter(p => p.group === groupName);
-      for (let i = 0; i < groupPlayers.length; i++) {
-        for (let j = i + 1; j < groupPlayers.length; j++) {
-          allPairings.push({ p1: groupPlayers[i].id, p2: groupPlayers[j].id });
-        }
-      }
-    });
-
-    // 2. Determine Start Date (Next Monday)
-    const nextMonday = new Date();
-    // Monday is 1. If today is Monday, get the *next* one.
-    nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7 || 7));
-    nextMonday.setHours(10, 0, 0, 0);
-
-    const newFixtures: Fixture[] = [];
-    let currentDate = new Date(nextMonday);
-    let matchCounterToday = 0;
-
-    allPairings.forEach((pair, idx) => {
-      // Skip weekends if the increment landed on one
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(10, 0, 0, 0);
-      }
-
-      newFixtures.push({
-        id: `auto-${idx}-${Math.random().toString(36).substr(2, 5)}`,
-        p1Id: pair.p1,
-        p2Id: pair.p2,
-        status: 'scheduled',
-        timestamp: new Date(currentDate).getTime()
-      });
-
-      matchCounterToday++;
-      
-      if (matchCounterToday >= 4) {
-        matchCounterToday = 0;
-        currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(10, 0, 0, 0); // Reset time for next day
-      } else {
-        // Increment time for next match of the same day (e.g., 1 hour gaps)
-        currentDate.setHours(currentDate.getHours() + 1);
-      }
-    });
-
-    setFixtures(newFixtures);
-    alert(`LOGISTICS SUCCESS: ${newFixtures.length} intra-group matches scheduled starting Monday.`);
-    setView(ViewMode.FIXTURES);
-  };
 
   const handleSavePlayer = (player: Player) => {
     if (editingPlayer) {
@@ -182,7 +110,7 @@ export default function FC26App() {
   };
 
   const deletePlayer = (id: number) => {
-    if (window.confirm("ATHLETE DELETION: Are you sure you want to wipe this record?")) {
+    if (window.confirm("ATHLETE DELETION: Wipe this record?")) {
       setPlayers(prev => prev.filter(p => p.id !== id));
     }
   };
@@ -191,7 +119,7 @@ export default function FC26App() {
     if (window.confirm("FACTORY RESET: Restore default configuration?")) {
       localStorage.clear();
       setPlayers(INITIAL_PLAYERS);
-      setFixtures([]);
+      setFixtures(PRE_SEEDED_FIXTURES);
       window.location.reload();
     }
   };
@@ -218,9 +146,7 @@ export default function FC26App() {
               <img 
                 src="https://www.greatplacetowork.in/great/api/assets/uploads/5483/logo/logo.png" 
                 alt="Partner Logo" 
-                style={{ 
-                  filter: 'brightness(0) saturate(100%) invert(84%) sepia(50%) saturate(769%) hue-rotate(357deg) brightness(105%) contrast(107%)'
-                }}
+                style={{ filter: 'brightness(0) saturate(100%) invert(84%) sepia(50%) saturate(769%) hue-rotate(357deg) brightness(105%) contrast(107%)' }}
                 className="h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(254,190,16,0.2)] hover:scale-105 transition-transform duration-500 cursor-pointer"
               />
               <div className="hidden sm:block">
@@ -234,7 +160,6 @@ export default function FC26App() {
               {[
                 { id: ViewMode.ROSTER, icon: Users, label: 'Athletes' },
                 { id: ViewMode.FIXTURES, icon: Swords, label: 'Arena' },
-                { id: ViewMode.LEADERBOARD, icon: Trophy, label: 'Hall of Fame' },
               ].map(nav => (
                 <button
                   key={nav.id}
@@ -252,20 +177,12 @@ export default function FC26App() {
             <div className="flex items-center space-x-6">
               <div className="hidden sm:flex flex-col items-end">
                  <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : (syncStatus === 'conflict' || syncStatus === 'rate-limited') ? 'bg-red-500' : 'bg-slate-700'}`}></div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">
-                      {syncStatus === 'rate-limited' ? 'API THROTTLED' : syncStatus === 'conflict' ? 'SYNC ERROR' : 'LIVE FEED'}
-                    </span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">LIVE FEED</span>
                  </div>
-                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                   {syncStatus === 'syncing' ? 'PUSHING DATA...' : syncStatus === 'rate-limited' ? 'RATE LIMIT REACHED' : 'CLOUD STABLE'}
-                 </span>
+                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">{syncStatus === 'syncing' ? 'PUSHING DATA...' : 'CLOUD STABLE'}</span>
               </div>
-              <button 
-                onClick={() => hydrateFromRemote()}
-                title="Force Remote Pull"
-                className={`p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all ${(syncStatus === 'conflict' || syncStatus === 'rate-limited') ? 'text-red-500 border-red-500/50 bg-red-500/10' : 'text-slate-400 hover:text-blue-400'}`}
-              >
+              <button onClick={() => hydrateFromRemote()} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all text-slate-400 hover:text-blue-400">
                 <RefreshCcw size={16} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
               </button>
             </div>
@@ -273,152 +190,130 @@ export default function FC26App() {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-          {syncStatus === 'rate-limited' && (
-            <div className="mb-8 p-4 bg-amber-600/10 border border-amber-600/50 rounded-sm flex items-center justify-between animate-pulse">
-               <div className="flex items-center gap-4 text-amber-500">
-                  <AlertTriangle size={20} />
-                  <p className="text-[10px] font-black uppercase tracking-widest">GitHub Rate Limit Exceeded: Public API access restricted. Results may not sync temporarily.</p>
-               </div>
-               <button onClick={() => hydrateFromRemote()} className="px-6 py-2 bg-amber-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">RETRY SYNC</button>
-            </div>
-          )}
-
-          <div className="mb-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <button 
-              onClick={() => setView(view === ViewMode.GROUPS ? ViewMode.ROSTER : ViewMode.GROUPS)}
-              className={`relative overflow-hidden group border transition-all duration-500 rounded-sm p-10 flex flex-col items-center justify-center space-y-4 ${
-                view === ViewMode.GROUPS 
-                ? 'bg-blue-600/10 border-blue-600/50 shadow-[0_0_50px_rgba(59,130,246,0.1)]' 
-                : 'bg-slate-950/40 border-white/5 hover:border-white/20'
-              }`}
-            >
-              <LayoutGrid size={24} className={view === ViewMode.GROUPS ? 'text-blue-400' : 'text-slate-500'} />
-              <div className="text-center">
-                <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">
-                  {view === ViewMode.GROUPS ? 'CLOSE STANDINGS' : 'VIEW STANDINGS'}
-                </h3>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => setView(view === ViewMode.FIXTURES ? ViewMode.ROSTER : ViewMode.FIXTURES)}
-              className={`relative overflow-hidden group border transition-all duration-500 rounded-sm p-10 flex flex-col items-center justify-center space-y-4 ${
-                view === ViewMode.FIXTURES 
-                ? 'bg-indigo-600/10 border-indigo-600/50 shadow-[0_0_50px_rgba(79,70,229,0.1)]' 
-                : 'bg-slate-950/40 border-white/5 hover:border-white/20'
-              }`}
-            >
-              <Swords size={24} className={view === ViewMode.FIXTURES ? 'text-indigo-400' : 'text-slate-500'} />
-              <div className="text-center">
-                <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">
-                  {view === ViewMode.FIXTURES ? 'CLOSE ARENA' : 'ENTER ARENA'}
-                </h3>
-              </div>
-            </button>
-
-            {isAuthorized && (
-              <button 
-                onClick={generateTournamentSchedule}
-                className="relative overflow-hidden group border border-amber-600/20 bg-amber-600/5 hover:bg-amber-600/10 transition-all duration-500 rounded-sm p-10 flex flex-col items-center justify-center space-y-4"
-              >
-                <Wand2 size={24} className="text-amber-500" />
-                <div className="text-center">
-                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">AUTO-SCHEDULE</h3>
-                </div>
-              </button>
-            )}
-          </div>
-
           {view === ViewMode.GROUPS ? (
-            <GroupStage 
-              players={players} 
-              onUpdatePlayer={handleUpdatePlayer}
-              onBack={() => setView(ViewMode.ROSTER)} 
-              isAuthorized={isAuthorized}
-            />
+            <GroupStage players={players} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : view === ViewMode.FIXTURES ? (
-            <MatchCenter 
-              players={players}
-              fixtures={fixtures}
-              onUpdateFixtures={setFixtures}
-              onUpdatePlayer={handleUpdatePlayer}
-              onBack={() => setView(ViewMode.ROSTER)}
-              isAuthorized={isAuthorized}
-            />
-          ) : view === ViewMode.ROSTER ? (
+            <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={setFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
+          ) : (
             <div className="space-y-12">
+              <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onClick={() => setView(ViewMode.GROUPS)} className="bg-slate-950/40 border border-white/5 hover:border-white/20 transition-all rounded-sm p-8 flex flex-col items-center justify-center space-y-4">
+                  <LayoutGrid size={24} className="text-slate-500" />
+                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">VIEW STANDINGS</h3>
+                </button>
+                <button onClick={() => setView(ViewMode.FIXTURES)} className="bg-slate-950/40 border border-white/5 hover:border-white/20 transition-all rounded-sm p-8 flex flex-col items-center justify-center space-y-4">
+                  <Swords size={24} className="text-slate-500" />
+                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">ENTER ARENA</h3>
+                </button>
+              </div>
+
               <div className="flex items-center justify-between border-b border-white/5 pb-8">
                 <div className="flex items-center space-x-6">
                    <div className="h-[2px] w-12 bg-blue-600"></div>
                    <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
                 </div>
-                {isAuthorized && (
-                  <button 
-                    onClick={() => { setEditingPlayer(null); setIsModalOpen(true); }}
-                    className="px-8 py-3 bg-white text-black text-[9px] font-black uppercase tracking-[0.3em] italic hover:bg-blue-600 hover:text-white transition-all rounded-sm shadow-xl"
-                  >
-                    NEW ATHLETE ENTRY
-                  </button>
-                )}
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-slate-900/50 p-1 rounded-sm border border-white/5">
+                    <button 
+                      onClick={() => setIsListView(false)}
+                      className={`p-2 rounded-sm transition-all ${!isListView ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
+                    >
+                      <Grid3X3 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => setIsListView(true)}
+                      className={`p-2 rounded-sm transition-all ${isListView ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
+                    >
+                      <List size={16} />
+                    </button>
+                  </div>
+                  {isAuthorized && (
+                    <button 
+                      onClick={() => { setEditingPlayer(null); setIsModalOpen(true); }}
+                      className="px-8 py-3 bg-white text-black text-[9px] font-black uppercase tracking-[0.3em] italic hover:bg-blue-600 hover:text-white transition-all rounded-sm shadow-xl"
+                    >
+                      NEW ENTRY
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {filteredPlayers.map(player => (
-                  <PlayerCard 
-                    key={player.id}
-                    player={player} 
-                    onDelete={deletePlayer}
-                    onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }}
-                    isAuthorized={isAuthorized}
-                  />
-                ))}
-              </div>
+              {isListView ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-12 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 italic border-b border-white/5">
+                    <div className="col-span-1">ID</div>
+                    <div className="col-span-5">Athlete Name</div>
+                    <div className="col-span-3">Affiliation</div>
+                    <div className="col-span-1 text-center">W</div>
+                    <div className="col-span-1 text-center">L</div>
+                    <div className="col-span-1 text-right">Grp</div>
+                  </div>
+                  {filteredPlayers.map((player, idx) => {
+                    const team = TEAMS.find(t => t.id === player.teamId);
+                    return (
+                      <div 
+                        key={player.id}
+                        className="grid grid-cols-12 items-center px-6 py-4 bg-slate-950/50 border border-white/5 hover:border-blue-600/30 hover:bg-blue-600/5 transition-all group"
+                      >
+                        <div className="col-span-1 text-xs font-black text-slate-800 italic">{idx + 1}</div>
+                        <div className="col-span-5 flex items-center gap-4">
+                          <img src={player.avatar} className="w-8 h-8 rounded-sm object-cover border border-white/10" />
+                          <span className="text-sm font-black text-white uppercase italic tracking-tight">{player.name}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-3">
+                          <img src={team?.logo} className="w-5 h-5 object-contain grayscale group-hover:grayscale-0 transition-all" />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{team?.name}</span>
+                        </div>
+                        <div className="col-span-1 text-center font-black text-white italic">{player.wins}</div>
+                        <div className="col-span-1 text-center font-black text-slate-700 italic">{player.losses}</div>
+                        <div className="col-span-1 text-right font-black text-blue-500 italic">{player.group || 'A'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {filteredPlayers.map(player => (
+                    <PlayerCard 
+                      key={player.id}
+                      player={player} 
+                      onDelete={deletePlayer}
+                      onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }}
+                      isAuthorized={isAuthorized}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : null}
+          )}
         </main>
 
         <footer className="border-t border-white/5 py-12 bg-slate-950/30 backdrop-blur-xl mt-auto">
           <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-12">
-             <div className="flex flex-col md:flex-row md:items-center gap-12">
+             <div className="flex items-center space-x-12">
                 <div className="flex items-center space-x-4">
                   {syncStatus === 'synced' ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-slate-700" />}
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">
-                    {syncStatus === 'synced' ? 'GLOBAL CLOUD SYNC: ACTIVE' : 'LOCAL CACHE ONLY'}
-                  </p>
+                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">{syncStatus === 'synced' ? 'GLOBAL CLOUD SYNC: ACTIVE' : 'LOCAL CACHE ONLY'}</p>
                 </div>
-                
                 {!isAuthorized ? (
-                  <div className="flex items-center space-x-4">
-                    <input 
-                      type="password"
-                      placeholder="MANAGER ACCESS"
-                      value={accessCode}
-                      onChange={(e) => setAccessCode(e.target.value)}
-                      className="bg-slate-950 border border-white/5 rounded-sm px-4 py-2 text-[10px] font-black tracking-widest text-slate-400 focus:outline-none focus:border-blue-600/50 w-40 placeholder-slate-800"
-                    />
-                  </div>
+                  <input 
+                    type="password"
+                    placeholder="MANAGER ACCESS"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    className="bg-slate-950 border border-white/5 rounded-sm px-4 py-2 text-[10px] font-black tracking-widest text-slate-400 focus:outline-none focus:border-blue-600/50 w-40 placeholder-slate-800"
+                  />
                 ) : (
-                  <button onClick={resetSystem} className="text-[9px] font-black text-red-950 hover:text-red-500 uppercase tracking-widest">
-                    SYSTEM RESET
-                  </button>
+                  <button onClick={resetSystem} className="text-[9px] font-black text-red-950 hover:text-red-500 uppercase tracking-widest">SYSTEM RESET</button>
                 )}
              </div>
-
-             <div className="flex flex-col items-end">
-                <p className="text-[9px] font-black text-slate-800 uppercase tracking-[0.3em] italic">
-                  TERMINAL v26.04 • CLOUD SHARED MODE • {isAuthorized ? 'MANAGER' : 'VIEWER'}
-                </p>
-             </div>
+             <p className="text-[9px] font-black text-slate-800 uppercase tracking-[0.3em] italic">TERMINAL v26.04 • {isAuthorized ? 'MANAGER' : 'VIEWER'}</p>
           </div>
         </footer>
       </div>
 
-      <PlayerModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleSavePlayer}
-        editingPlayer={editingPlayer}
-      />
+      <PlayerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePlayer} editingPlayer={editingPlayer} />
     </div>
   );
 }
