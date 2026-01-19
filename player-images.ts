@@ -32,4 +32,5 @@ export const PLAYER_IMAGE_REGISTRY: Record<string, string> = {
   "Hatim Essafi": "https://aymamz.sirv.com/pgd/Hatim%20ESSAFI.png",
   "Youssef Lahrizi": "https://aymamz.sirv.com/pgd/Youssef%20Lahrizi.png",
   "Ilyasse Mbarki": "https://aymamz.sirv.com/pgd/Ilyasse%20Mbarki.png",
+  "Wadia TAZI": "https://aymamz.sirv.com/pgd/Wadia%20TAZI.png",
 };

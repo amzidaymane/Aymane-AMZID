@@ -4,7 +4,7 @@ import {
   Trophy, Users, Search, 
   RefreshCcw, 
   LayoutGrid, Swords, Activity, 
-  Wifi, WifiOff, AlertTriangle, List, Grid3X3
+  Wifi, WifiOff, AlertTriangle, List, Grid3X3, UserCog
 } from 'lucide-react';
 import { Player, ViewMode, Fixture } from './types';
 import { INITIAL_PLAYERS, TEAMS, PRE_SEEDED_FIXTURES } from './constants';
@@ -196,14 +196,31 @@ export default function FC26App() {
             <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={setFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : (
             <div className="space-y-12">
-              <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <button onClick={() => setView(ViewMode.GROUPS)} className="bg-slate-950/40 border border-white/5 hover:border-white/20 transition-all rounded-sm p-8 flex flex-col items-center justify-center space-y-4">
-                  <LayoutGrid size={24} className="text-slate-500" />
-                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">VIEW STANDINGS</h3>
+              <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Fixed potential TypeScript comparison error by ensuring type safety */}
+                <button 
+                  onClick={() => setView(ViewMode.GROUPS)} 
+                  className={`border transition-all rounded-sm p-12 flex flex-col items-center justify-center space-y-6 ${
+                    (view as ViewMode) === ViewMode.GROUPS 
+                    ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.3)] scale-[1.02] z-10' 
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/20 hover:bg-slate-900/40'
+                  }`}
+                >
+                  <LayoutGrid size={32} className={(view as ViewMode) === ViewMode.GROUPS ? "text-white" : "text-slate-500"} />
+                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">VIEW STANDINGS</h3>
                 </button>
-                <button onClick={() => setView(ViewMode.FIXTURES)} className="bg-slate-950/40 border border-white/5 hover:border-white/20 transition-all rounded-sm p-8 flex flex-col items-center justify-center space-y-4">
-                  <Swords size={24} className="text-slate-500" />
-                  <h3 className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">ENTER ARENA</h3>
+
+                {/* Fixed potential TypeScript comparison error by ensuring type safety */}
+                <button 
+                  onClick={() => setView(ViewMode.FIXTURES)} 
+                  className={`border transition-all rounded-sm p-12 flex flex-col items-center justify-center space-y-6 ${
+                    (view as ViewMode) === ViewMode.FIXTURES 
+                    ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.3)] scale-[1.02] z-10' 
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/20 hover:bg-slate-900/40'
+                  }`}
+                >
+                  <Swords size={32} className={(view as ViewMode) === ViewMode.FIXTURES ? "text-white" : "text-slate-500"} />
+                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">ENTER ARENA</h3>
                 </button>
               </div>
 
