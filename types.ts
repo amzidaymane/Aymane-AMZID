@@ -16,7 +16,7 @@ export interface Player {
   losses: number;
   avatar: string;
   isQualified?: boolean;
-  group?: string; // Persistent group identifier (A, B, C, etc.)
+  group?: string; 
   alignment?: { x: number; y: number };
 }
 
@@ -37,6 +37,8 @@ export interface Fixture {
   score2?: number;
   status: 'scheduled' | 'finished';
   timestamp: number;
+  dayLabel: string;      // Mandatory for strict schedule
+  matchNumber: number;   // Mandatory for strict schedule
 }
 
 export enum ViewMode {

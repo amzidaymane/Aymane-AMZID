@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Always use { apiKey: process.env.API_KEY }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getScoutingReport = async (playerName: string, teamName: string) => {
   try {
@@ -9,6 +10,7 @@ export const getScoutingReport = async (playerName: string, teamName: string) =>
       model: 'gemini-3-flash-preview',
       contents: `Generate a short, professional football scouting report for a player named ${playerName} playing for ${teamName} in an FC 26 tournament. Include: 1. Playstyle profile (Aggressive, Tactical, Counter-attacker, etc.), 2. Key strengths, 3. One tactical recommendation. Keep it under 100 words and use professional football terminology.`,
     });
+    // Use response.text property, not .text() method
     return response.text;
   } catch (error) {
     console.error("AI Scouting Report failed:", error);
@@ -44,7 +46,9 @@ export const analyzePlayerImage = async (base64Data: string, mimeType: string) =
       },
     });
 
-    return JSON.parse(response.text || '{"x": 50, "y": 30}');
+    // Use response.text property
+    const jsonStr = response.text?.trim() || '{"x": 50, "y": 30}';
+    return JSON.parse(jsonStr);
   } catch (error) {
     console.error("Image analysis failed:", error);
     return { x: 50, y: 30 };

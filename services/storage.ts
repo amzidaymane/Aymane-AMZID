@@ -1,8 +1,8 @@
 
 import { Player, Match, Fixture } from '../types';
 
-const REPO_OWNER = 'aymamzid';
-const REPO_NAME = 'PGD-FC';
+const REPO_OWNER = 'amzidaymane';
+const REPO_NAME = 'Aymane-AMZID';
 const FILE_PATH = 'db.json';
 const BRANCH = 'main';
 
@@ -30,7 +30,6 @@ class GitHubStorageService {
         headers['Authorization'] = `token ${GITHUB_TOKEN}`;
       }
 
-      // Add a cache buster to the URL to ensure we always get the latest from GitHub's servers
       const response = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
         { headers }
@@ -71,7 +70,6 @@ class GitHubStorageService {
         'Accept': 'application/vnd.github.v3+json'
       };
 
-      // STEP 1: Always fetch the latest SHA immediately before writing. 
       const headResponse = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}&t=${Date.now()}`,
         { headers }
@@ -85,11 +83,9 @@ class GitHubStorageService {
         return 'rate-limited';
       }
 
-      // STEP 2: Prepare the content
       const jsonString = JSON.stringify(data, null, 2);
       const content = btoa(unescape(encodeURIComponent(jsonString)));
       
-      // STEP 3: Push to GitHub
       const putResponse = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
         {

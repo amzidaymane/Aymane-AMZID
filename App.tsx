@@ -1,127 +1,193 @@
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Trophy, Users, Search, 
-  RefreshCcw, 
-  LayoutGrid, Swords, Activity, 
-  Wifi, WifiOff, AlertTriangle, List, Grid3X3, UserCog
+  Users, Search, LayoutGrid, Swords, Wifi, WifiOff, List, Grid3X3, AlertTriangle, Database, RefreshCw, HardDrive, ShieldCheck, Lock, Unlock
 } from 'lucide-react';
 import { Player, ViewMode, Fixture } from './types';
-import { INITIAL_PLAYERS, TEAMS, PRE_SEEDED_FIXTURES } from './constants';
+import { INITIAL_PLAYERS, TEAMS } from './constants';
 import { PlayerCard } from './components/PlayerCard';
 import { PlayerModal } from './components/PlayerModal';
 import { GroupStage } from './components/GroupStage';
 import { MatchCenter } from './components/MatchCenter';
-import { githubStorage, SyncStatus, AppData } from './services/storage';
+import { subscribeToTournament, updateRemoteState, fetchRemoteState } from './services/firebase';
+import { saveLocalData, getLocalData } from './services/persistence';
+
+// --- AUTHORITATIVE DATA LOCK ---
+const SEED_VERSION = "2026-01-20_MANAGER_RESTORE_V9"; 
+
+const RAW_SCHEDULE = `
+1 | Monday 19 | 1 | Mohamed Amine Chaabani | Mohannad Briouel
+2 | Monday 19 | 2 | Aymane AMZID | Anas Bengamra
+3 | Monday 19 | 3 | Yanis Saidi | Anas Habchi
+4 | Monday 19 | 4 | Mohamed Taha Kebdani | Youssef Fadlaoui
+5 | Monday 19 | 5 | Saad Belkacemi | Elmehdi Mahassine
+6 | Monday 19 | 6 | Wadia Tazi | Kamal Lakhr
+7 | Tuesday 20 | 1 | Anas Nouimi | Youssef Lahrizi
+8 | Tuesday 20 | 2 | Rida Zouaki | Mohamed Karim Nachit
+9 | Tuesday 20 | 3 | Amine Chbihi | Karim Beniouri
+10 | Tuesday 20 | 4 | Nabil Lamkadem | Ilyasse Mbarki
+11 | Tuesday 20 | 5 | Younes Jebbar | Anas Nouimi
+12 | Tuesday 20 | 6 | Anas Hilmi | Rida Zouaki
+13 | Wednesday 21 | 1 | Anas Hilmi | Ilyasse Mbarki
+14 | Wednesday 21 | 2 | Youssef Lahrizi | Karim Beniouri
+15 | Wednesday 21 | 3 | Nabil Lamkadem | Rida Zouaki
+16 | Wednesday 21 | 4 | Younes Jebbar | Amine Chbihi
+17 | Wednesday 21 | 5 | Anas Hilmi | Mohamed Karim Nachit
+18 | Wednesday 21 | 6 | Amine Chbihi | Youssef Lahrizi
+19 | Thursday 22 | 1 | Mohamed Amine Chaabani | Saad Belkacemi
+20 | Thursday 22 | 2 | Mohannad Briouel | Elmehdi Mahassine
+21 | Thursday 22 | 3 | Wadia Tazi | Youssef Fadlaoui
+22 | Thursday 22 | 4 | Mohamed Taha Kebdani | Kamal Lakhr
+23 | Thursday 22 | 5 | Aymane AMZID | Yanis Saidi
+24 | Thursday 22 | 6 | Anas Bengamra | Anas Habchi
+25 | Thursday 22 | 7 | Hatim Essafi | Ilyass Saddik
+26 | Thursday 22 | 8 | Soufiane Belkasmi | Ilyass Saddik
+27 | Friday 23 | 1 | Hatim Essafi | Soufiane Belkasmi
+28 | Friday 23 | 2 | Zakaria Belbaida | Ilyass Saddik
+29 | Friday 23 | 3 | Youssef Fadlaoui | Souhail Boukili
+30 | Friday 23 | 4 | Wadia Tazi | Souhail Boukili
+31 | Friday 23 | 5 | Aymane AMZID | Anas Habchi
+32 | Friday 23 | 6 | Mohamed Amine Chaabani | Elmehdi Mahassine
+33 | Friday 23 | 7 | Souhail Boukili | Kamal Lakhr
+34 | Friday 23 | 8 | Hatim Essafi | Zakaria Belbaida
+35 | Monday 26 | 1 | Nabil Lamkadem | Mohamed Karim Nachit
+36 | Monday 26 | 2 | Younes Jebbar | Karim Beniouri
+37 | Monday 26 | 3 | Ilyasse Mbarki | Rida Zouaki
+38 | Monday 26 | 4 | Anas Nouimi | Karim Beniouri
+39 | Monday 26 | 5 | Anas Hilmi | Nabil Lamkadem
+40 | Monday 26 | 6 | Anas Nouimi | Amine Chbihi
+41 | Monday 26 | 7 | Ilyasse Mbarki | Mohamed Karim Nachit
+42 | Monday 26 | 8 | Younes Jebbar | Youssef Lahrizi
+43 | Tuesday 27 | 1 | Mohamed Taha Kebdani | Souhail Boukili
+44 | Tuesday 27 | 2 | Youssef Fadlaoui | Kamal Lakhr
+45 | Tuesday 27 | 3 | Wadia Tazi | Mohamed Taha Kebdani
+46 | Tuesday 27 | 4 | Mohannad Briouel | Saad Belkacemi
+47 | Tuesday 27 | 5 | Zakaria Belbaida | Soufiane Belkasmi
+48 | Tuesday 27 | 6 | Yanis Saidi | Anas Bengamra
+`.trim();
 
 export default function FC26App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [accessCode, setAccessCode] = useState('');
-  const [isListView, setIsListView] = useState(false);
-  
-  const [players, setPlayers] = useState<Player[]>(() => {
-    try {
-      const saved = localStorage.getItem('fc26_players');
-      return saved ? JSON.parse(saved) : INITIAL_PLAYERS;
-    } catch (e) {
-      return INITIAL_PLAYERS;
-    }
-  });
-  
-  const [fixtures, setFixtures] = useState<Fixture[]>(() => {
-    try {
-      const saved = localStorage.getItem('fc26_fixtures');
-      return saved ? JSON.parse(saved) : PRE_SEEDED_FIXTURES;
-    } catch (e) {
-      return PRE_SEEDED_FIXTURES;
-    }
-  });
+  const [syncStatus, setSyncStatus] = useState<'online' | 'offline' | 'syncing' | 'error'>('syncing');
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [remoteStats, setRemoteStats] = useState({ p: 0, f: 0 });
+  const isSyncBlocked = useRef(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  const local = getLocalData();
+  const [players, setPlayers] = useState<Player[]>(local?.players || INITIAL_PLAYERS);
+  const [fixtures, setFixtures] = useState<Fixture[]>(local?.fixtures || []);
   
   const [view, setView] = useState<ViewMode>(ViewMode.ROSTER);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [search, setSearch] = useState('');
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
-  const lastRemoteVersion = useRef<number>(0);
-  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    saveLocalData(players, fixtures);
+  }, [players, fixtures]);
 
   useEffect(() => {
     if (accessCode === '959525') {
       setIsAuthorized(true);
+    } else if (accessCode.length > 0 && accessCode !== '959525') {
+      setIsAuthorized(false);
     }
   }, [accessCode]);
 
-  const hydrateFromRemote = useCallback(async (isSilent = false) => {
-    if (!isSilent) setSyncStatus('syncing');
-    const remoteData = await githubStorage.loadData();
-    if (remoteData) {
-      if (remoteData.version > lastRemoteVersion.current) {
-        setPlayers(remoteData.players);
-        setFixtures(remoteData.fixtures || []);
-        lastRemoteVersion.current = remoteData.version;
-        localStorage.setItem('fc26_players', JSON.stringify(remoteData.players));
-        localStorage.setItem('fc26_fixtures', JSON.stringify(remoteData.fixtures || []));
+  const parseLockedSchedule = (): Fixture[] => {
+    return RAW_SCHEDULE.split('\n').map(line => {
+      const parts = line.split('|').map(s => s.trim());
+      if (parts.length < 5) return null;
+      
+      const absoluteOrder = parseInt(parts[0]);
+      const dLabel = parts[1];
+      const mNum = parseInt(parts[2]);
+      const p1Name = parts[3];
+      const p2Name = parts[4];
+
+      const p1 = INITIAL_PLAYERS.find(p => p.name === p1Name);
+      const p2 = INITIAL_PLAYERS.find(p => p.name === p2Name);
+
+      return {
+        id: `fxt-v9-${absoluteOrder}`,
+        p1Id: p1?.id || 0,
+        p2Id: p2?.id || 0,
+        status: 'scheduled',
+        timestamp: absoluteOrder, 
+        dayLabel: dLabel,
+        matchNumber: mNum
+      } as Fixture;
+    }).filter(f => f !== null) as Fixture[];
+  };
+
+  const startSubscription = () => {
+    if (unsubscribeRef.current) unsubscribeRef.current();
+    unsubscribeRef.current = subscribeToTournament(
+      (state) => {
+        if (isSyncBlocked.current) return;
+        if (state.players) setPlayers(state.players);
+        if (state.fixtures) setFixtures(state.fixtures);
+        setRemoteStats({ p: state.players?.length || 0, f: state.fixtures?.length || 0 });
+        setSyncStatus('online');
+        setLastError(null);
+      },
+      (error) => {
+        setSyncStatus('offline');
+        setLastError(error.code + ": " + error.message);
       }
-      setSyncStatus('synced');
-    } else {
-      if (!isSilent) setSyncStatus('idle');
-    }
+    );
+  };
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        setSyncStatus('syncing');
+        const remoteData: any = await fetchRemoteState();
+        
+        if (remoteData?.seedToken !== SEED_VERSION) {
+          const newFixtures = parseLockedSchedule();
+          const finalPlayers = INITIAL_PLAYERS; 
+          await updateRemoteState(finalPlayers, newFixtures);
+          const firebase = (window as any).firebase;
+          const db = (window as any).db || firebase?.db;
+          if (firebase?.doc && db) {
+            const tournamentDocRef = firebase.doc(db, "tournament", "registry_v1");
+            await firebase.setDoc?.(tournamentDocRef, { seedToken: SEED_VERSION }, { merge: true });
+          }
+          setFixtures(newFixtures);
+          setPlayers(finalPlayers);
+        } else if (remoteData) {
+          setPlayers(remoteData.players);
+          setFixtures(remoteData.fixtures);
+        }
+        setSyncStatus('online');
+        startSubscription();
+      } catch (error: any) {
+        console.error("Initialization failed:", error);
+        setSyncStatus('offline');
+      }
+    };
+    initialize();
+    return () => unsubscribeRef.current?.();
   }, []);
 
-  useEffect(() => {
-    hydrateFromRemote();
-    const pollInterval = isAuthorized ? 15000 : 45000;
-    const interval = setInterval(() => hydrateFromRemote(true), pollInterval);
-    return () => clearInterval(interval);
-  }, [hydrateFromRemote, isAuthorized]);
-
-  useEffect(() => {
-    if (isAuthorized) {
-      if (isInitialMount.current) {
-        isInitialMount.current = false;
-        return;
-      }
-      const timeoutId = setTimeout(async () => {
-        setSyncStatus('syncing');
-        const newVersion = Date.now();
-        const data: AppData = { players, matches: [], fixtures, version: newVersion };
-        const status = await githubStorage.saveData(data);
-        if (status === 'synced') {
-          lastRemoteVersion.current = newVersion;
-          localStorage.setItem('fc26_players', JSON.stringify(players));
-          localStorage.setItem('fc26_fixtures', JSON.stringify(fixtures));
-        }
-        setSyncStatus(status);
-      }, 2000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [players, fixtures, isAuthorized]);
-
-  const handleSavePlayer = (player: Player) => {
-    if (editingPlayer) {
-      setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
-    } else {
-      setPlayers(prev => [player, ...prev]);
-    }
+  const handleUpdatePlayer = async (updatedPlayer: Player) => {
+    const newPlayers = players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+    setPlayers(newPlayers);
+    try { await updateRemoteState(newPlayers, fixtures); } catch (e) { setSyncStatus('offline'); }
   };
 
-  const handleUpdatePlayer = (updatedPlayer: Player) => {
-    setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+  const handleSetFixtures = async (newFixtures: Fixture[]) => {
+    setFixtures(newFixtures);
+    try { await updateRemoteState(players, newFixtures); } catch (e) { setSyncStatus('offline'); }
   };
 
-  const deletePlayer = (id: number) => {
-    if (window.confirm("ATHLETE DELETION: Wipe this record?")) {
-      setPlayers(prev => prev.filter(p => p.id !== id));
-    }
-  };
-
-  const resetSystem = () => {
-    if (window.confirm("FACTORY RESET: Restore default configuration?")) {
-      localStorage.clear();
-      setPlayers(INITIAL_PLAYERS);
-      setFixtures(PRE_SEEDED_FIXTURES);
-      window.location.reload();
-    }
+  const deleteFixture = async (id: string) => {
+    const newFixtures = fixtures.filter(f => f.id !== id);
+    setFixtures(newFixtures);
+    try { await updateRemoteState(players, newFixtures); } catch (e) { setSyncStatus('offline'); }
   };
 
   const filteredPlayers = useMemo(() => {
@@ -132,205 +198,98 @@ export default function FC26App() {
   }, [players, search]);
 
   return (
-    <div className="min-h-screen bg-[#020617] font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#020617] font-sans selection:bg-white selection:text-black overflow-x-hidden pb-32">
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 right-0 w-[60vw] h-[60vh] bg-blue-600/5 blur-[160px] rounded-full"></div>
-        <div className="absolute bottom-0 left-0 w-[60vw] h-[60vh] bg-indigo-600/5 blur-[160px] rounded-full"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]"></div>
       </div>
-
+      
       <div className="relative z-10 flex flex-col min-h-screen">
-        <header className="border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl sticky top-0 z-50">
+        <header className="border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl sticky top-0 z-[60]">
           <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
             <div className="flex items-center space-x-10">
-              <img 
-                src="https://www.greatplacetowork.in/great/api/assets/uploads/5483/logo/logo.png" 
-                alt="Partner Logo" 
-                style={{ filter: 'brightness(0) saturate(100%) invert(84%) sepia(50%) saturate(769%) hue-rotate(357deg) brightness(105%) contrast(107%)' }}
-                className="h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(254,190,16,0.2)] hover:scale-105 transition-transform duration-500 cursor-pointer"
-              />
-              <div className="hidden sm:block">
-                <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">
-                  PGD <span className="text-slate-600 not-italic tracking-[0.3em] font-light ml-2 text-xs">FC26 TOURNAMENT</span>
-                </h1>
-              </div>
+              <img src="https://www.greatplacetowork.in/great/api/assets/uploads/5483/logo/logo.png" alt="Logo" style={{ filter: 'brightness(0) saturate(100%) invert(84%) sepia(50%) saturate(769%) hue-rotate(357deg) brightness(105%) contrast(107%)' }} className="h-16 w-auto object-contain" />
+              <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">PGD <span className="text-slate-600 not-italic tracking-[0.3em] font-light ml-2 text-xs">FC26 TOURNAMENT</span></h1>
             </div>
-
             <nav className="hidden lg:flex items-center space-x-1">
-              {[
-                { id: ViewMode.ROSTER, icon: Users, label: 'Athletes' },
-                { id: ViewMode.FIXTURES, icon: Swords, label: 'Arena' },
-              ].map(nav => (
-                <button
-                  key={nav.id}
-                  onClick={() => setView(nav.id)}
-                  className={`flex items-center space-x-4 px-8 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.3em] italic transition-all duration-300 ${
-                    view === nav.id ? 'bg-white text-black' : 'text-slate-500 hover:text-white'
-                  }`}
-                >
-                  <nav.icon size={12} strokeWidth={2.5} />
-                  <span>{nav.label}</span>
-                </button>
-              ))}
+              <button onClick={() => setView(ViewMode.ROSTER)} className={`px-8 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.3em] italic ${view === ViewMode.ROSTER ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>Athletes</button>
+              <button onClick={() => setView(ViewMode.FIXTURES)} className={`px-8 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.3em] italic ${view === ViewMode.FIXTURES ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>Arena</button>
             </nav>
-
             <div className="flex items-center space-x-6">
-              <div className="hidden sm:flex flex-col items-end">
-                 <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-red-500'}`}></div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] italic">LIVE FEED</span>
-                 </div>
-                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">{syncStatus === 'syncing' ? 'PUSHING DATA...' : 'CLOUD STABLE'}</span>
+              <div className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : syncStatus === 'offline' ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`}></div>
+                <span className={`text-[8px] font-black uppercase tracking-[0.4em] italic ${syncStatus === 'online' ? 'text-green-500' : syncStatus === 'offline' ? 'text-red-500' : 'text-blue-400'}`}>{syncStatus === 'online' ? 'STATION ONLINE' : syncStatus === 'offline' ? 'OFFLINE MODE' : 'INITIALIZING...'}</span>
               </div>
-              <button onClick={() => hydrateFromRemote()} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all text-slate-400 hover:text-blue-400">
-                <RefreshCcw size={16} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
-              </button>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
+        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12 relative z-10">
           {view === ViewMode.GROUPS ? (
-            <GroupStage players={players} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
+            <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
           ) : view === ViewMode.FIXTURES ? (
-            <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={setFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
+            <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
           ) : (
             <div className="space-y-12">
-              <div className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Fixed potential TypeScript comparison error by ensuring type safety */}
-                <button 
-                  onClick={() => setView(ViewMode.GROUPS)} 
-                  className={`border transition-all rounded-sm p-12 flex flex-col items-center justify-center space-y-6 ${
-                    (view as ViewMode) === ViewMode.GROUPS 
-                    ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.3)] scale-[1.02] z-10' 
-                    : 'bg-slate-950/40 border-white/5 hover:border-white/20 hover:bg-slate-900/40'
-                  }`}
-                >
-                  <LayoutGrid size={32} className={(view as ViewMode) === ViewMode.GROUPS ? "text-white" : "text-slate-500"} />
-                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">VIEW STANDINGS</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
+                  <LayoutGrid size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">VIEW STANDINGS</h3>
                 </button>
-
-                {/* Fixed potential TypeScript comparison error by ensuring type safety */}
-                <button 
-                  onClick={() => setView(ViewMode.FIXTURES)} 
-                  className={`border transition-all rounded-sm p-12 flex flex-col items-center justify-center space-y-6 ${
-                    (view as ViewMode) === ViewMode.FIXTURES 
-                    ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.3)] scale-[1.02] z-10' 
-                    : 'bg-slate-950/40 border-white/5 hover:border-white/20 hover:bg-slate-900/40'
-                  }`}
-                >
-                  <Swords size={32} className={(view as ViewMode) === ViewMode.FIXTURES ? "text-white" : "text-slate-500"} />
-                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">ENTER ARENA</h3>
+                <button onClick={() => setView(ViewMode.FIXTURES)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
+                  <Swords size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">ENTER ARENA</h3>
                 </button>
               </div>
-
               <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                <div className="flex items-center space-x-6">
-                   <div className="h-[2px] w-12 bg-blue-600"></div>
-                   <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="flex bg-slate-900/50 p-1 rounded-sm border border-white/5">
-                    <button 
-                      onClick={() => setIsListView(false)}
-                      className={`p-2 rounded-sm transition-all ${!isListView ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                    >
-                      <Grid3X3 size={16} />
-                    </button>
-                    <button 
-                      onClick={() => setIsListView(true)}
-                      className={`p-2 rounded-sm transition-all ${isListView ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
-                    >
-                      <List size={16} />
-                    </button>
-                  </div>
-                  {isAuthorized && (
-                    <button 
-                      onClick={() => { setEditingPlayer(null); setIsModalOpen(true); }}
-                      className="px-8 py-3 bg-white text-black text-[9px] font-black uppercase tracking-[0.3em] italic hover:bg-blue-600 hover:text-white transition-all rounded-sm shadow-xl"
-                    >
-                      NEW ENTRY
-                    </button>
-                  )}
+                <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
+                <div className="relative group">
+                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-blue-500 transition-colors"><Search size={14} /></div>
+                   <input type="text" placeholder="SEARCH DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all" />
                 </div>
               </div>
-
-              {isListView ? (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-12 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 italic border-b border-white/5">
-                    <div className="col-span-1">ID</div>
-                    <div className="col-span-5">Athlete Name</div>
-                    <div className="col-span-3">Affiliation</div>
-                    <div className="col-span-1 text-center">W</div>
-                    <div className="col-span-1 text-center">L</div>
-                    <div className="col-span-1 text-right">Grp</div>
-                  </div>
-                  {filteredPlayers.map((player, idx) => {
-                    const team = TEAMS.find(t => t.id === player.teamId);
-                    return (
-                      <div 
-                        key={player.id}
-                        className="grid grid-cols-12 items-center px-6 py-4 bg-slate-950/50 border border-white/5 hover:border-blue-600/30 hover:bg-blue-600/5 transition-all group"
-                      >
-                        <div className="col-span-1 text-xs font-black text-slate-800 italic">{idx + 1}</div>
-                        <div className="col-span-5 flex items-center gap-4">
-                          <img src={player.avatar} className="w-8 h-8 rounded-sm object-cover border border-white/10" />
-                          <span className="text-sm font-black text-white uppercase italic tracking-tight">{player.name}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center gap-3">
-                          <img src={team?.logo} className="w-5 h-5 object-contain grayscale group-hover:grayscale-0 transition-all" />
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{team?.name}</span>
-                        </div>
-                        <div className="col-span-1 text-center font-black text-white italic">{player.wins}</div>
-                        <div className="col-span-1 text-center font-black text-slate-700 italic">{player.losses}</div>
-                        <div className="col-span-1 text-right font-black text-blue-500 italic">{player.group || 'A'}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {filteredPlayers.map(player => (
-                    <PlayerCard 
-                      key={player.id}
-                      player={player} 
-                      onDelete={deletePlayer}
-                      onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }}
-                      isAuthorized={isAuthorized}
-                    />
-                  ))}
-                </div>
-              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {filteredPlayers.map(player => (
+                  <PlayerCard key={player.id} player={player} onDelete={() => {}} onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }} isAuthorized={isAuthorized} />
+                ))}
+              </div>
             </div>
           )}
         </main>
 
-        <footer className="border-t border-white/5 py-12 bg-slate-950/30 backdrop-blur-xl mt-auto">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-12">
-             <div className="flex items-center space-x-12">
-                <div className="flex items-center space-x-4">
-                  {syncStatus === 'synced' ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-slate-700" />}
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">{syncStatus === 'synced' ? 'GLOBAL CLOUD SYNC: ACTIVE' : 'LOCAL CACHE ONLY'}</p>
+        <footer className="mt-auto border-t border-white/5 bg-slate-950/80 backdrop-blur-xl py-8 z-50">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-8 h-8 rounded-sm bg-blue-600/10 border border-blue-500/20 flex items-center justify-center">
+                <ShieldCheck size={16} className="text-blue-500" />
+              </div>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">PGD FC26 Authorized Tournament Platform &copy; 2026</p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {isAuthorized ? (
+                <div className="flex items-center gap-3 px-6 py-3 bg-green-500/10 border border-green-500/30 rounded-sm animate-in fade-in zoom-in duration-300">
+                  <Unlock size={14} className="text-green-500" />
+                  <span className="text-[10px] font-black text-green-500 uppercase tracking-widest italic">Manager Mode Enabled</span>
+                  <button onClick={() => { setAccessCode(''); setIsAuthorized(false); }} className="ml-2 text-[9px] font-black text-slate-500 hover:text-white underline uppercase tracking-widest">Logout</button>
                 </div>
-                {!isAuthorized ? (
+              ) : (
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 transition-colors group-focus-within:text-blue-500">
+                    <Lock size={12} />
+                  </div>
                   <input 
-                    type="password"
-                    placeholder="MANAGER ACCESS"
+                    type="password" 
+                    placeholder="MANAGER ACCESS CODE" 
                     value={accessCode}
                     onChange={(e) => setAccessCode(e.target.value)}
-                    className="bg-slate-950 border border-white/5 rounded-sm px-4 py-2 text-[10px] font-black tracking-widest text-slate-400 focus:outline-none focus:border-blue-600/50 w-40 placeholder-slate-800"
+                    className="bg-slate-950/50 border border-white/5 rounded-sm pl-10 pr-6 py-3 text-[10px] font-black tracking-[0.2em] text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all placeholder:text-slate-800"
                   />
-                ) : (
-                  <button onClick={resetSystem} className="text-[9px] font-black text-red-950 hover:text-red-500 uppercase tracking-widest">SYSTEM RESET</button>
-                )}
-             </div>
-             <p className="text-[9px] font-black text-slate-800 uppercase tracking-[0.3em] italic">TERMINAL v26.04 • {isAuthorized ? 'MANAGER' : 'VIEWER'}</p>
+                </div>
+              )}
+            </div>
           </div>
         </footer>
       </div>
-
-      <PlayerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSavePlayer} editingPlayer={editingPlayer} />
+      <PlayerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleUpdatePlayer} editingPlayer={editingPlayer} />
     </div>
   );
 }

@@ -14,98 +14,45 @@ export const TEAMS: Team[] = [
 ];
 
 const RAW_PLAYERS = [
-  { name: 'Nabil Lamkadem', teamId: 'rm', group: 'A' },
+  // Group A
   { name: 'Anas Hilmi', teamId: 'bay', group: 'A' },
+  { name: 'Nabil Lamkadem', teamId: 'rm', group: 'A' },
   { name: 'Ilyasse Mbarki', teamId: 'rm', group: 'A' },
-  { name: 'Mohamed Karim Nachit', teamId: 'mci', group: 'A' },
   { name: 'Rida Zouaki', teamId: 'rm', group: 'A' },
-  { name: 'Younes Jebbar', teamId: 'bar', group: 'B' },
+  { name: 'Mohamed Karim Nachit', teamId: 'mci', group: 'A' },
+  // Group B
   { name: 'Anas Nouimi', teamId: 'rm', group: 'B' },
-  { name: 'Aymane AMZID', teamId: 'psg', group: 'C' },
   { name: 'Amine Chbihi', teamId: 'rm', group: 'B' },
-  { name: 'Yanis Saidi', teamId: 'bay', group: 'C' },
   { name: 'Youssef Lahrizi', teamId: 'rm', group: 'B' },
-  { name: 'Anas Habchi', teamId: 'fra', group: 'C' },
+  { name: 'Karim Beniouri', teamId: 'rm', group: 'B' },
+  { name: 'Younes Jebbar', teamId: 'bar', group: 'B' },
+  // Group C
+  { name: 'Aymane AMZID', teamId: 'psg', group: 'C' },
+  { name: 'Yanis Saidi', teamId: 'bay', group: 'C' },
   { name: 'Anas Bengamra', teamId: 'rm', group: 'C' },
-  { name: 'Mohannad Briouel', teamId: 'liv', group: 'D' },
-  { name: 'Wadia TAZI', teamId: 'rm', group: 'C' },
+  { name: 'Anas Habchi', teamId: 'fra', group: 'C' },
+  // Group D
   { name: 'Mohamed Amine Chaabani', teamId: 'psg', group: 'D' },
-  { name: 'Elmehdi Mahassine', teamId: 'rm', group: 'D' },
+  { name: 'Mohannad Briouel', teamId: 'liv', group: 'D' },
   { name: 'Saad Belkacemi', teamId: 'bar', group: 'D' },
-  { name: 'Zakaria Belbaida', teamId: 'rm', group: 'E' },
+  { name: 'Elmehdi Mahassine', teamId: 'rm', group: 'D' },
+  // Group E
   { name: 'Hatim Essafi', teamId: 'bar', group: 'E' },
+  { name: 'Zakaria Belbaida', teamId: 'rm', group: 'E' },
   { name: 'Soufiane Belkasmi', teamId: 'rm', group: 'E' },
   { name: 'Ilyass Saddik', teamId: 'bay', group: 'E' },
+  // Group F
   { name: 'Mohamed Taha Kebdani', teamId: 'rm', group: 'F' },
   { name: 'Youssef Fadlaoui', teamId: 'mci', group: 'F' },
-  { name: 'Karim Beniouri', teamId: 'rm', group: 'B' },
   { name: 'Souhail Boukili', teamId: 'ars', group: 'F' },
   { name: 'Kamal Lakhr', teamId: 'bay', group: 'F' },
+  { name: 'Wadia Tazi', teamId: 'rm', group: 'F' },
 ];
 
 export const INITIAL_PLAYERS: Player[] = RAW_PLAYERS.map((p, i) => {
-  const registeredImage = PLAYER_IMAGE_REGISTRY[p.name];
+  const registeredImage = PLAYER_IMAGE_REGISTRY[p.name === 'Wadia Tazi' ? 'Wadia TAZI' : p.name];
   const avatar = registeredImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.name)}`;
   return { id: i + 1, name: p.name, teamId: p.teamId, group: p.group, wins: 0, losses: 0, avatar };
 });
 
-export const PRE_SEEDED_FIXTURES: Fixture[] = (() => {
-  const groups = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const matchesByGroup: Record<string, {p1Id: number, p2Id: number, group: string}[]> = {};
-
-  groups.forEach((g) => {
-    matchesByGroup[g] = [];
-    const members = INITIAL_PLAYERS.filter(p => p.group === g);
-    for (let i = 0; i < members.length; i++) {
-      for (let j = i + 1; j < members.length; j++) {
-        matchesByGroup[g].push({ p1Id: members[i].id, p2Id: members[j].id, group: g });
-      }
-    }
-  });
-
-  const finalFixtures: Fixture[] = [];
-  let lastPlayerIds: number[] = [];
-
-  const scheduleDailyMatches = (day: number, groupFilter: string[], dailyLimit: number) => {
-    let matchesTodayCount = 0;
-    let time = new Date(2026, 0, day, 10, 0, 0);
-
-    for (const group of groupFilter) {
-      const pool = matchesByGroup[group];
-      if (!pool) continue;
-
-      while (matchesTodayCount < dailyLimit && pool.length > 0) {
-        let matchIndex = -1;
-        for (let i = 0; i < pool.length; i++) {
-          if (!lastPlayerIds.includes(pool[i].p1Id) && !lastPlayerIds.includes(pool[i].p2Id)) {
-            matchIndex = i;
-            break;
-          }
-        }
-        if (matchIndex === -1) matchIndex = 0;
-
-        const match = pool.splice(matchIndex, 1)[0];
-        finalFixtures.push({
-          id: `seed-${match.group}-${day}-${matchesTodayCount}`,
-          p1Id: match.p1Id,
-          p2Id: match.p2Id,
-          status: 'scheduled',
-          timestamp: time.getTime()
-        });
-        lastPlayerIds = [match.p1Id, match.p2Id];
-        time = new Date(time.getTime() + 60 * 60000);
-        matchesTodayCount++;
-      }
-    }
-  };
-
-  scheduleDailyMatches(19, ['C'], 10);
-  scheduleDailyMatches(20, ['A'], 10);
-  scheduleDailyMatches(21, ['B'], 10);
-  scheduleDailyMatches(22, ['D'], 6);
-  scheduleDailyMatches(23, ['E'], 6);
-  scheduleDailyMatches(26, ['F'], 6);
-  scheduleDailyMatches(27, ['A', 'B', 'C', 'D', 'E', 'F'], 6);
-
-  return finalFixtures;
-})();
+export const PRE_SEEDED_FIXTURES: Fixture[] = [];
