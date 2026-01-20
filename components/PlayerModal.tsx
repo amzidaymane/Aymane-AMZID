@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ImageIcon, ShieldCheck, Loader2, Sparkles, Target, Upload, CheckCircle2 } from 'lucide-react';
 import { Player } from '../types';
 import { TEAMS } from '../constants';
-import { analyzePlayerImage } from '../services/gemini';
 
 interface PlayerModalProps {
   isOpen: boolean;
@@ -87,8 +86,8 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ isOpen, onClose, onSav
       const dataToAnalyze = avatar.startsWith('data:') ? avatar.split(',')[1] : avatar;
       const mimeType = avatar.startsWith('data:') ? avatar.split(';')[0].split(':')[1] : 'image/jpeg';
       
-      const result = await analyzePlayerImage(dataToAnalyze, mimeType);
-      setAlignment(result);
+
+      setAlignment({ x: 50, y: 20 });
       setIsVerified(true);
       setIsAnalyzing(false);
     } catch (error) {
