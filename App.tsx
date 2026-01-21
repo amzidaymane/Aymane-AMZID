@@ -147,16 +147,14 @@ export default function FC26App() {
         setSyncStatus('syncing');
         const remoteData: any = await fetchRemoteState();
         
-        if (remoteData?.seedToken !== SEED_VERSION) {
-          const newFixtures = parseLockedSchedule();
-          const finalPlayers = INITIAL_PLAYERS; 
-          await updateRemoteState(finalPlayers, newFixtures);
-          const firebase = (window as any).firebase;
-          const db = (window as any).db || firebase?.db;
-          if (firebase?.doc && db) {
-            const tournamentDocRef = firebase.doc(db, "tournament", "registry_v1");
-            await firebase.setDoc?.(tournamentDocRef, { seedToken: SEED_VERSION }, { merge: true });
-          }
+if (remoteData) {
+  setPlayers(remoteData.players || INITIAL_PLAYERS);
+  setFixtures(remoteData.fixtures || []);
+} else {
+  // fallback only if Firestore is empty/unreachable
+  setPlayers(INITIAL_PLAYERS);
+  setFixtures(parseLockedSchedule());
+}
           setFixtures(newFixtures);
           setPlayers(finalPlayers);
         } else if (remoteData) {
