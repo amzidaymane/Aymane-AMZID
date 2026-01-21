@@ -18,43 +18,64 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
       const groupPlayers = players.filter(p => p.group === gName);
       
       const stats = groupPlayers.map(player => {
-        let played = 0;
-        let wins = 0;
-        let losses = 0;
-        let draws = 0;
+let played = 0;
+let wins = 0;
+let draws = 0;
+let losses = 0;
+let gf = 0; // goals for
+let ga = 0; // goals against
 
         // Only count finished fixtures where both players are in the same group
         fixtures.filter(f => f.status === 'finished').forEach(f => {
           const p1 = players.find(p => p.id === f.p1Id);
           const p2 = players.find(p => p.id === f.p2Id);
 
-          if (p1 && p2 && p1.group === gName && p2.group === gName) {
-            if (p1.id === player.id) {
-              played++;
-              if (f.score1! > f.score2!) wins++;
-              else if (f.score2! > f.score1!) losses++;
-              else draws++;
-            } else if (p2.id === player.id) {
-              played++;
-              if (f.score2! > f.score1!) wins++;
-              else if (f.score1! > f.score2!) losses++;
-              else draws++;
-            }
-          }
+if (p1 && p2 && p1.group === gName && p2.group === gName) {
+  const s1 = f.score1 ?? 0;
+  const s2 = f.score2 ?? 0;
+
+  if (p1.id === player.id) {
+    played++;
+    gf += s1;
+    ga += s2;
+
+    if (s1 > s2) wins++;
+    else if (s1 < s2) losses++;
+    else draws++;
+  } else if (p2.id === player.id) {
+    played++;
+    gf += s2;
+    ga += s1;
+
+    if (s2 > s1) wins++;
+    else if (s2 < s1) losses++;
+    else draws++;
+  }
+}
+
         });
 
-        return {
+return {
   ...player,
   played,
   wins,
   draws,
   losses,
+  gf,
+  ga,
+  gd: gf - ga,
   points: wins * 3 + draws
 };
-      }).sort((a, b) => {
-        // Sort by Points desc, then Wins desc
-        return b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name);
-      });
+}).sort((a, b) => {
+  return (
+    b.points - a.points ||
+    b.gd - a.gd ||
+    b.gf - a.gf ||
+    b.wins - a.wins ||
+    a.name.localeCompare(b.name)
+  );
+});
+
 
       return { name: `GROUP ${gName}`, players: stats };
     });
@@ -109,53 +130,63 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
             </div>
             
             <div className="p-3 space-y-2">
-              <div className="grid grid-cols-[1fr_repeat(4,40px)] gap-2 px-4 py-2 text-[8px] font-black text-slate-600 uppercase tracking-widest">
-                <span>Athlete</span>
-                <span className="text-center">P</span>
-                <span className="text-center">W</span>
-                <span className="text-center">L</span>
-                <span className="text-center">PTS</span>
+              <div className="grid grid-cols-[1fr_repeat(8,40px)] gap-2 px-4 py-2 text-[8px] font-black text-slate-600 uppercase tracking-widest">
+<span>Athlete</span>
+<span className="text-center">P</span>
+<span className="text-center">W</span>
+<span className="text-center">D</span>
+<span className="text-center">L</span>
+<span className="text-center">GF</span>
+<span className="text-center">GA</span>
+<span className="text-center">BP</span>
+<span className="text-center">PTS</span>
+
               </div>
               
-              {group.players.map((p, pIdx) => {
-                const team = TEAMS.find(t => t.id === p.teamId);
-                return (
-                  <div 
-                    key={p.id} 
-                    className="relative grid grid-cols-[1fr_repeat(4,40px)] gap-2 items-center p-4 rounded-sm border border-white/5 bg-slate-900/20"
-                  >
-                    <div className="flex items-center space-x-4 min-w-0">
-                      <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[10px] font-black italic rounded-sm border bg-slate-900 text-slate-600 border-white/10">
-                        {pIdx + 1}
-                      </div>
-                      <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 bg-slate-950 rounded-sm border border-white/10 overflow-hidden">
-                           <img src={p.avatar} alt="" className="w-full h-full object-cover grayscale-[30%]" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-white uppercase italic tracking-tight leading-none truncate">
-                          {p.name}
-                        </p>
-                        <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest italic mt-1">{team?.name}</p>
-                      </div>
-                    </div>
-
-                    <span className="text-sm font-black text-slate-500 italic text-center">{p.played}</span>
-                    <span className="text-sm font-black text-slate-400 italic text-center">{p.wins}</span>
-                    <span className="text-sm font-black text-slate-800 italic text-center">{p.losses}</span>
-                    <div className="flex items-center justify-center">
-                      <div className="w-full py-1 rounded-sm bg-blue-600 text-white text-center font-black italic text-sm">
-                        {p.points}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+{group.players.map((p, pIdx) => {
+  const team = TEAMS.find(t => t.id === p.teamId);
+  return (
+    <div 
+      key={p.id} 
+      className="relative grid grid-cols-[1fr_repeat(8,80px)] gap-2 items-center p-4 rounded-sm border border-white/5 bg-slate-900/20"
+    >
+      <div className="flex items-center space-x-4 min-w-0">
+        <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[10px] font-black italic rounded-sm border bg-slate-900 text-slate-600 border-white/10">
+          {pIdx + 1}
+        </div>
+        <div className="relative flex-shrink-0">
+          <div className="w-10 h-10 bg-slate-950 rounded-sm border border-white/10 overflow-hidden">
+            <img src={p.avatar} alt="" className="w-full h-full object-cover grayscale-[30%]" />
           </div>
-        ))}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black text-white uppercase italic tracking-tight leading-none truncate">
+            {p.name}
+          </p>
+          <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest italic mt-1">
+            {team?.name}
+          </p>
+        </div>
       </div>
+
+      <span className="text-sm font-black text-slate-500 italic text-center">{p.played}</span>
+      <span className="text-sm font-black text-slate-400 italic text-center">{p.wins}</span>
+      <span className="text-sm font-black text-slate-400 italic text-center">{p.draws}</span>
+      <span className="text-sm font-black text-slate-800 italic text-center">{p.losses}</span>
+
+      <span className="text-sm font-black text-slate-500 italic text-center">{p.gf}</span>
+      <span className="text-sm font-black text-slate-500 italic text-center">{p.ga}</span>
+      <span className="text-sm font-black text-slate-500 italic text-center">{p.gd}</span>
+
+      <div className="flex items-center justify-center">
+        <div className="w-full py-1 rounded-sm bg-blue-600 text-white text-center font-black italic text-sm">
+          {p.points}
+        </div>
+      </div>
+    </div>
+  );
+})}
+
       
       <div className="glass-panel p-8 flex flex-wrap items-center justify-center gap-10 border border-white/10 rounded-sm">
          <div className="flex items-center space-x-3">
