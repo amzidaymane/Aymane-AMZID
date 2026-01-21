@@ -21,6 +21,7 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
         let played = 0;
         let wins = 0;
         let losses = 0;
+        let draws = 0;
 
         // Only count finished fixtures where both players are in the same group
         fixtures.filter(f => f.status === 'finished').forEach(f => {
@@ -32,21 +33,24 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
               played++;
               if (f.score1! > f.score2!) wins++;
               else if (f.score2! > f.score1!) losses++;
+              else draws++;
             } else if (p2.id === player.id) {
               played++;
               if (f.score2! > f.score1!) wins++;
               else if (f.score1! > f.score2!) losses++;
+              else draws++;
             }
           }
         });
 
         return {
-          ...player,
-          played,
-          wins,
-          losses,
-          points: wins * 3
-        };
+  ...player,
+  played,
+  wins,
+  draws,
+  losses,
+  points: wins * 3 + draws
+};
       }).sort((a, b) => {
         // Sort by Points desc, then Wins desc
         return b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name);
