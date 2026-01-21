@@ -45,6 +45,7 @@ export const subscribeToTournament = (
   onError?: (error: any) => void
 ) => {
   return onSnapshot(
+    console.log("SNAPSHOT APPLIED", snap.exists(), snap.data()?.fixtures?.length);
     doc(db, "tournament", TOURNAMENT_DOC_ID), 
     (docSnap) => {
       if (docSnap.exists()) {
