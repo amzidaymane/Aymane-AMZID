@@ -56,7 +56,6 @@ return onSnapshot(
       console.error("Firestore Sync Lost:", error);
       if (onError) onError(error);
     }
-  );
 };
 
 export const fetchRemoteState = async (): Promise<TournamentState | null> => {
