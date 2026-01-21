@@ -157,10 +157,7 @@ if (remoteData) {
 }
           setFixtures(newFixtures);
           setPlayers(finalPlayers);
-        } else if (remoteData) {
-          setPlayers(remoteData.players);
-          setFixtures(remoteData.fixtures);
-        }
+
         setSyncStatus('online');
         startSubscription();
       } catch (error: any) {
