@@ -44,14 +44,14 @@ export const subscribeToTournament = (
   callback: (state: TournamentState) => void,
   onError?: (error: any) => void
 ) => {
-  return onSnapshot(
-    console.log("SNAPSHOT APPLIED", snap.exists(), snap.data()?.fixtures?.length);
-    doc(db, "tournament", TOURNAMENT_DOC_ID), 
-    (docSnap) => {
-      if (docSnap.exists()) {
-        callback(docSnap.data() as TournamentState);
-      }
-    },
+return onSnapshot(
+  doc(db, "tournament", TOURNAMENT_DOC_ID),
+  (docSnap) => {
+    console.log("SNAPSHOT APPLIED", docSnap.exists(), docSnap.data()?.fixtures?.length);
+    // existing code that reads docSnap and updates state/calls onData...
+  }
+);
+
     (error) => {
       console.error("Firestore Sync Lost:", error);
       if (onError) onError(error);
