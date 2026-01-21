@@ -1,3 +1,4 @@
+console.log("APP START", new Date().toISOString());
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
