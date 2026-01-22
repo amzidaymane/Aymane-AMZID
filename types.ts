@@ -48,5 +48,19 @@ export enum ViewMode {
   GROUPS = 'GROUPS',
   FIXTURES = 'FIXTURES',
   KNOCKOUT = 'KNOCKOUT',
+
+  export type KnockoutRound = 'THIRD_PLAYOFF' | 'R16' | 'QF' | 'SF' | 'F';
+
+export type KnockoutMatch = {
+  id: string;
+  round: KnockoutRound;
+  order: number; // display order inside round
+  p1Id: number;
+  p2Id: number;
+  score1?: number;
+  score2?: number;
+  status: 'scheduled' | 'finished';
+};
+
 }
 
