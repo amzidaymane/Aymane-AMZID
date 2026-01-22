@@ -41,16 +41,7 @@ export interface Fixture {
   matchNumber: number;   // Mandatory for strict schedule
 }
 
-export enum ViewMode {
-  ROSTER = 'ROSTER',
-  LEADERBOARD = 'LEADERBOARD',
-  STATS = 'STATS',
-  GROUPS = 'GROUPS',
-  FIXTURES = 'FIXTURES',
-  KNOCKOUT = 'KNOCKOUT',
-
-  export type KnockoutRound = 'THIRD_PLAYOFF' | 'R16' | 'QF' | 'SF' | 'F';
-
+export type KnockoutRound = 'THIRD_PLAYOFF' | 'R16' | 'QF' | 'SF' | 'F';
 export type KnockoutMatch = {
   id: string;
   round: KnockoutRound;
@@ -61,6 +52,14 @@ export type KnockoutMatch = {
   score2?: number;
   status: 'scheduled' | 'finished';
 };
+
+export enum ViewMode {
+  ROSTER = 'ROSTER',
+  LEADERBOARD = 'LEADERBOARD',
+  STATS = 'STATS',
+  GROUPS = 'GROUPS',
+  FIXTURES = 'FIXTURES',
+  KNOCKOUT = 'KNOCKOUT',
 
 }
 
