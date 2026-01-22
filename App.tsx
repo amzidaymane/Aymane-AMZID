@@ -15,6 +15,7 @@ import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
 
 
+
 // --- AUTHORITATIVE DATA LOCK ---
 const SEED_VERSION = "2026-01-20_MANAGER_RESTORE_V9"; 
 
