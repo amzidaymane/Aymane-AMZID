@@ -56,3 +56,14 @@ export const INITIAL_PLAYERS: Player[] = RAW_PLAYERS.map((p, i) => {
 });
 
 export const PRE_SEEDED_FIXTURES: Fixture[] = [];
+
+export const FIXTURE_DAYS = [
+  "Monday 19",
+  "Tuesday 20",
+  "Wednesday 21",
+  "Thursday 22",
+  "Friday 23",
+  "Monday 26",
+  "Tuesday 27",
+];
+
