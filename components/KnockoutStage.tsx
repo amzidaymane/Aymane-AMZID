@@ -23,6 +23,25 @@ export const KnockoutStage: React.FC<KnockoutStageProps> = ({ players, fixtures,
   const { top2, thirdRanked, bestThirds } = useMemo(() => {
     const groupNames = ["A", "B", "C", "D", "E", "F"];
 
+    // ... all your computation logic here ...
+
+    console.log(
+      "TOP2",
+      top2.map(p => ({ name: p.name, group: p.group, pts: p.points, gd: p.gd, gf: p.gf }))
+    );
+    console.log(
+      "THIRDS",
+      thirdRanked.map(p => ({ name: p.name, group: p.group, pts: p.points, gd: p.gd, gf: p.gf }))
+    );
+    console.log(
+      "BEST_THIRDS",
+      bestThirds.map(p => ({ name: p.name, group: p.group, pts: p.points, gd: p.gd, gf: p.gf }))
+    );
+
+    return { top2, thirdRanked, bestThirds };
+  }, [players, fixtures]);
+
+
     const computeGroupStats = (gName: string): StatLine[] => {
       const groupPlayers = players.filter((p) => p.group === gName);
 
