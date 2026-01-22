@@ -223,11 +223,14 @@ if (remoteData) {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12 relative z-10">
-          {view === ViewMode.GROUPS ? (
-            <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
-          ) : view === ViewMode.FIXTURES ? (
-            <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
-          ) : (
+{view === ViewMode.GROUPS ? (
+  <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
+) : view === ViewMode.KNOCKOUT ? (
+  <KnockoutStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
+) : view === ViewMode.FIXTURES ? (
+  <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
+) : (
+
             <div className="space-y-12">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
