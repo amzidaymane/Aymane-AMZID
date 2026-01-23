@@ -13,6 +13,15 @@ import { MatchCenter } from './components/MatchCenter';
 import { subscribeToTournament, updateRemoteState, fetchRemoteState } from './services/firebase';
 import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
+import { listenFixtures } from './services/fixtures.service'
+
+const [fixtures, setFixtures] = useState<Match[]>([])
+
+useEffect(() => {
+  const unsub = listenFixtures(setFixtures)
+  return () => unsub()
+}, [])
+
 
 
 
