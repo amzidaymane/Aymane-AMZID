@@ -7,6 +7,10 @@ import {
   Trash2, Check, X, 
   Zap, ChevronLeft, LayoutGrid, Maximize2, Layers, Save, Edit3
 } from 'lucide-react';
+import { updateScore } from '../services/fixtures.service'
+
+await updateScore(match.id, scoreA, scoreB)
+
 
 interface MatchCenterProps {
   players: Player[];
