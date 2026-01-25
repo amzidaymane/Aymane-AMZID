@@ -1,10 +1,10 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getFirestore, 
-  doc, 
-  onSnapshot, 
-  setDoc, 
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  setDoc,
   getDoc,
   enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -44,18 +44,20 @@ export const subscribeToTournament = (
   callback: (state: TournamentState) => void,
   onError?: (error: any) => void
 ) => {
-return onSnapshot(
-  doc(db, "tournament", TOURNAMENT_DOC_ID),
-  (docSnap) => {
-    console.log("SNAPSHOT APPLIED", docSnap.exists(), docSnap.data()?.fixtures?.length);
-    // existing code that reads docSnap and updates state/calls onData...
-  }
-);
-
+  return onSnapshot(
+    doc(db, "tournament", TOURNAMENT_DOC_ID),
+    (docSnap) => {
+      console.log("SNAPSHOT APPLIED", docSnap.exists(), docSnap.data()?.fixtures?.length);
+      const data = docSnap.data() as TournamentState | undefined;
+      if (data) {
+        callback(data);
+      }
+    },
     (error) => {
       console.error("Firestore Sync Lost:", error);
       if (onError) onError(error);
     }
+  );
 };
 
 export const fetchRemoteState = async (): Promise<TournamentState | null> => {

@@ -154,19 +154,25 @@ export default function FC26App() {
     const initialize = async () => {
       try {
         setSyncStatus('syncing');
-        const remoteData: any = await fetchRemoteState();
+        let remoteData: any = null;
+        try {
+          remoteData = await fetchRemoteState();
+        } catch (e) {
+          console.warn("Remote fetch failed, falling back to local/hardcoded", e);
+        }
 
-        if (remoteData) {
+        if (remoteData && remoteData.fixtures && remoteData.fixtures.length > 0) {
+          console.log("LOADED REMOTE DATA", remoteData.fixtures.length);
           setPlayers(remoteData.players || INITIAL_PLAYERS);
-          // FORCE OVERWRITE FIXTURES FROM RAW_SCHEDULE
-          const hardcodedFixtures = parseLockedSchedule();
-          setFixtures(hardcodedFixtures);
-          // Sync to remote to ensure persistence
-          updateRemoteState(remoteData.players || INITIAL_PLAYERS, hardcodedFixtures).catch(console.error);
+          setFixtures(remoteData.fixtures);
         } else {
-          // fallback only if Firestore is empty/unreachable
+          console.log("NO REMOTE DATA FOUND, SEEDING FROM HARDCODED");
+          // Fallback / First run
           setPlayers(INITIAL_PLAYERS);
-          setFixtures(parseLockedSchedule());
+          const hardcoded = parseLockedSchedule();
+          setFixtures(hardcoded);
+          // Seed the DB so next time we find it
+          updateRemoteState(INITIAL_PLAYERS, hardcoded).catch(console.error);
         }
 
         setSyncStatus('online');
