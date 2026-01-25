@@ -292,7 +292,7 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
                 items={groupedFixtures.days[day].map(f => f.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className={isGridView ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"}>
+                <div className={isGridView ? "grid grid-cols-1 xl:grid-cols-2 gap-6" : "space-y-6"}>
                   {groupedFixtures.days[day].map(fixture => (
                     <SortableFixtureItem
                       key={fixture.id}
@@ -367,96 +367,119 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
   if (!p1 || !p2) return null;
   const isFinished = fixture.status === 'finished';
 
-  const renderPlayer = (p: Player, t: any) => (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative">
-        <div className={`w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-black/40 ${isFinished && fixture.score1 !== fixture.score2 ? ((p.id === p1.id && fixture.score1! > fixture.score2!) || (p.id === p2.id && fixture.score2! > fixture.score1!) ? 'ring-2 ring-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'opacity-40 grayscale') : ''}`}>
-          <img
-            src={p.avatar}
-            className="w-full h-full object-cover"
-            style={{ objectPosition: p.alignment ? `${p.alignment.x}% ${p.alignment.y}%` : 'center 20%' }}
-            alt=""
-          />
-        </div>
-        <img src={t?.logo} className="absolute -bottom-1 -right-1 w-6 h-6 object-contain bg-slate-900 rounded-full p-1 border border-white/20" alt="" />
-      </div>
-      <p className="text-[10px] font-black text-white uppercase italic truncate w-full text-center">{p.name}</p>
-    </div>
-  );
-
   return (
-    <div className={`group relative p-6 rounded-sm border bg-slate-900/40 transition-all duration-300 ${isFinished ? 'border-white/5' : 'border-white/10'} ${isOverlay ? 'shadow-2xl bg-slate-800' : ''}`}>
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          {isAuthorized && dragHandleProps && (
-            <div {...dragHandleProps} className="cursor-grab hover:text-white text-slate-600 mr-2">
-              <GripVertical size={14} />
-            </div>
-          )}
-          <Layers size={10} className="text-indigo-400" />
-          <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest italic">MATCH {fixture.matchNumber}</span>
-        </div>
-        {isFinished && (
-          <div className="px-2 py-0.5 bg-blue-600/10 border border-blue-600/20 rounded-full">
-            <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest italic">Official Result</span>
-          </div>
-        )}
+    <div className={`group relative overflow-hidden rounded-md border transition-all duration-300 ${isFinished ? 'border-white/10 bg-[#0B1120] hover:bg-[#121c33]' : 'border-white/5 bg-[#0B1120]/60 hover:bg-[#0B1120]'} ${isOverlay ? 'shadow-2xl scale-105 z-50' : 'hover:shadow-xl'}`}>
+
+      {/* Subtle Top Highlight */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+
+      {/* Match Label */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+        <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] italic">MATCH {fixture.matchNumber}</span>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-        {renderPlayer(p1, t1)}
+      {/* Content */}
+      <div className="relative p-6 px-4 pt-8 flex items-center justify-between gap-2 md:gap-4 z-10 w-full h-full min-h-[140px]">
 
-        <div className="flex flex-col items-center">
-          {isFinished && !isEditing ? (
-            <div className="flex flex-col items-center">
-              <div className="text-3xl font-black text-white italic flex items-center gap-3">
-                <span className={fixture.score1! > fixture.score2! ? 'text-blue-500' : 'text-white'}>{fixture.score1}</span>
-                <span className="text-slate-800 text-lg">-</span>
-                <span className={fixture.score2! > fixture.score1! ? 'text-blue-500' : 'text-white'}>{fixture.score2}</span>
+        {/* Player 1 (Left) */}
+        <div className="flex-1 w-0 flex items-center gap-3">
+          <div className="relative shrink-0">
+            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border border-white/10 overflow-hidden bg-black/20 ${isFinished && fixture.score1! > fixture.score2! ? 'ring-2 ring-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'grayscale-[30%] group-hover:grayscale-0 transition-all'}`}>
+              <img
+                src={p1.avatar}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: p1.alignment ? `${p1.alignment.x}% ${p1.alignment.y}%` : 'center 20%' }}
+              />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-[#0B1120] p-1 border border-white/10 flex items-center justify-center shadow-md">
+              <img src={t1?.logo} className="w-full h-full object-contain" />
+            </div>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className={`text-xs md:text-sm font-bold uppercase tracking-tight leading-tight line-clamp-2 ${isFinished && fixture.score1! > fixture.score2! ? 'text-white' : 'text-slate-400'}`}>{p1.name}</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600 truncate">{t1?.name}</span>
+          </div>
+        </div>
+
+        {/* Center (Scores / VS) */}
+        <div className="flex flex-col items-center justify-center shrink-0 w-24 md:w-32 relative h-16">
+          {(!isFinished || isEditing) && isAuthorized ? (
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-slate-950/90 p-4 rounded-lg border border-white/10 backdrop-blur-xl z-20 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-2">
+                <input type="number" value={s1} onChange={e => setS1(Math.max(0, parseInt(e.target.value) || 0))} className="w-10 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-lg font-bold text-white focus:border-blue-500 outline-none" />
+                <span className="text-slate-600 font-bold text-xs">:</span>
+                <input type="number" value={s2} onChange={e => setS2(Math.max(0, parseInt(e.target.value) || 0))} className="w-10 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-lg font-bold text-white focus:border-blue-500 outline-none" />
               </div>
-              {isAuthorized && (
+              <div className="flex gap-1 w-full">
+                <button onClick={() => { onFinalize(fixture.id, s1, s2); setIsEditing(false); }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm font-bold text-[8px] uppercase tracking-widest">Save</button>
+                {isEditing && <button onClick={() => setIsEditing(false)} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-sm"><X size={10} /></button>}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1 transition-all duration-300">
+              {isFinished ? (
+                <div className="flex items-center gap-2 md:gap-4 text-2xl md:text-3xl font-black italic text-white leading-none">
+                  <span className={fixture.score1! > fixture.score2! ? 'text-white drop-shadow-sm' : 'text-slate-700'}>{fixture.score1}</span>
+                  <span className="text-sm text-slate-600 self-center font-normal">VS</span>
+                  <span className={fixture.score2! > fixture.score1! ? 'text-white drop-shadow-sm' : 'text-slate-700'}>{fixture.score2}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 opacity-30">
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                  <span className="text-[10px] font-black text-slate-500 italic">VS</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                </div>
+              )}
+
+              {isAuthorized && isFinished && (
                 <button
                   onClick={() => { setIsEditing(true); setS1(fixture.score1!); setS2(fixture.score2!); }}
-                  className="mt-3 p-1.5 text-slate-700 hover:text-white transition-colors"
+                  className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-600 hover:text-blue-500 transition-colors"
                 >
-                  <Edit3 size={12} />
+                  Edit
                 </button>
               )}
             </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              {(!isFinished || isEditing) && isAuthorized ? (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <input type="number" value={s1} onChange={e => setS1(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 bg-black/60 border border-white/10 rounded-sm py-2 text-center text-lg font-black text-white focus:border-blue-500 outline-none" />
-                    <span className="text-slate-700">:</span>
-                    <input type="number" value={s2} onChange={e => setS2(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 bg-black/60 border border-white/10 rounded-sm py-2 text-center text-lg font-black text-white focus:border-blue-500 outline-none" />
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => { onFinalize(fixture.id, s1, s2); setIsEditing(false); }} className="p-2 bg-blue-600 text-white rounded-sm hover:bg-blue-500"><Save size={12} /></button>
-                    {isEditing && <button onClick={() => setIsEditing(false)} className="p-2 bg-white/5 text-slate-400 rounded-sm"><X size={12} /></button>}
-                  </div>
-                </div>
-              ) : (
-                <div className="w-8 h-8 rounded-full border border-white/5 flex items-center justify-center bg-black/20">
-                  <span className="text-[9px] font-black text-slate-700 italic">VS</span>
-                </div>
-              )}
-            </div>
           )}
         </div>
 
-        {renderPlayer(p2, t2)}
-      </div>
+        {/* Player 2 (Right) */}
+        <div className="flex-1 w-0 flex items-center gap-3 flex-row-reverse text-right">
+          <div className="relative shrink-0">
+            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border border-white/10 overflow-hidden bg-black/20 ${isFinished && fixture.score2! > fixture.score1! ? 'ring-2 ring-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'grayscale-[30%] group-hover:grayscale-0 transition-all'}`}>
+              <img
+                src={p2.avatar}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: p2.alignment ? `${p2.alignment.x}% ${p2.alignment.y}%` : 'center 20%' }}
+              />
+            </div>
+            <div className="absolute -bottom-1 -left-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-[#0B1120] p-1 border border-white/10 flex items-center justify-center shadow-md">
+              <img src={t2?.logo} className="w-full h-full object-contain" />
+            </div>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className={`text-xs md:text-sm font-bold uppercase tracking-tight leading-tight line-clamp-2 ${isFinished && fixture.score2! > fixture.score1! ? 'text-white' : 'text-slate-400'}`}>{p2.name}</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600 truncate">{t2?.name}</span>
+          </div>
+        </div>
 
-      {isAuthorized && isFinished && !isEditing && (
-        <button
-          onClick={() => onDelete(fixture.id)}
-          className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 text-slate-700 hover:text-red-500 transition-all"
-        >
-          <Trash2 size={10} />
-        </button>
-      )}
+        {/* Controls */}
+        <div className="absolute top-2 right-2 flex gap-1">
+          {isAuthorized && dragHandleProps && (
+            <div {...dragHandleProps} className="p-2 cursor-grab text-slate-700 hover:text-white transition-colors">
+              <GripVertical size={12} />
+            </div>
+          )}
+          {isAuthorized && isFinished && !isEditing && (
+            <button
+              onClick={() => onDelete(fixture.id)}
+              className="p-2 text-slate-700 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -197,15 +197,44 @@ export default function FC26App() {
     try { await updateRemoteState(players, newFixtures); } catch (e) { setSyncStatus('offline'); }
   };
 
+  const [rosterView, setRosterView] = useState<'GRID' | 'LIST'>('GRID');
+
+  // ... (existing effects)
+
+  const statsPlayers = useMemo(() => {
+    return players.map(p => {
+      let wins = 0;
+      let losses = 0;
+      // fixtures is defined in outer scope
+      fixtures.forEach(f => {
+        if (f.status === 'finished' && f.score1 != null && f.score2 != null) {
+          if (f.p1Id === p.id) {
+            if (f.score1 > f.score2) wins++;
+            else if (f.score1 < f.score2) losses++;
+          } else if (f.p2Id === p.id) {
+            if (f.score2 > f.score1) wins++;
+            else if (f.score2 < f.score1) losses++;
+          }
+        }
+      });
+      return { ...p, wins, losses };
+    });
+  }, [players, fixtures]);
+
   const filteredPlayers = useMemo(() => {
-    return players.filter(p =>
+    return statsPlayers.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       TEAMS.find(t => t.id === p.teamId)?.name.toLowerCase().includes(search.toLowerCase())
     );
-  }, [players, search]);
+  }, [statsPlayers, search]);
+
+  const sortedPlayersForRanking = useMemo(() => {
+    return [...filteredPlayers].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+  }, [filteredPlayers]);
 
   return (
     <div className="min-h-screen bg-[#020617] font-sans selection:bg-white selection:text-black overflow-x-hidden pb-32">
+      {/* ... (keep header) */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 right-0 w-[60vw] h-[60vh] bg-blue-600/5 blur-[160px] rounded-full"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]"></div>
@@ -250,17 +279,74 @@ export default function FC26App() {
                 </button>
               </div>
               <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
+                <div className="flex items-center gap-6">
+                  <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
+                  <div className="flex bg-slate-900/50 p-1 rounded-sm border border-white/5">
+                    <button onClick={() => setRosterView('GRID')} className={`p-2 rounded-sm transition-all ${rosterView === 'GRID' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button onClick={() => setRosterView('LIST')} className={`p-2 rounded-sm transition-all ${rosterView === 'LIST' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+                      <List size={14} />
+                    </button>
+                  </div>
+                </div>
                 <div className="relative group">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-blue-500 transition-colors"><Search size={14} /></div>
                   <input type="text" placeholder="SEARCH DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all" />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {filteredPlayers.map(player => (
-                  <PlayerCard key={player.id} player={player} onDelete={() => { }} onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }} isAuthorized={isAuthorized} />
-                ))}
-              </div>
+
+              {rosterView === 'GRID' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {filteredPlayers.map(player => (
+                    <PlayerCard key={player.id} player={player} onDelete={() => { }} onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }} isAuthorized={isAuthorized} />
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                        <th className="py-4 px-4">Rank</th>
+                        <th className="py-4 px-4">Athlete</th>
+                        <th className="py-4 px-4">Team</th>
+                        <th className="py-4 px-4 text-center">Wins</th>
+                        <th className="py-4 px-4 text-center">Losses</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedPlayersForRanking.map((player, index) => {
+                        const team = TEAMS.find(t => t.id === player.teamId);
+                        return (
+                          <tr key={player.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                            <td className="py-4 px-4 text-slate-500 font-bold italic">#{index + 1}</td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+                                  <img src={player.avatar} className="w-full h-full object-cover" alt="" />
+                                </div>
+                                <span className="text-sm font-black text-white italic uppercase tracking-tighter">{player.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-2">
+                                <img src={team?.logo} className="w-5 h-5 object-contain opacity-60 group-hover:opacity-100 transition-opacity" alt="" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{team?.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="text-blue-500 font-black text-lg">{player.wins}</span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="text-slate-600 font-bold">{player.losses}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </main>
