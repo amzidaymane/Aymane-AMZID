@@ -16,7 +16,7 @@ export interface Player {
   losses: number;
   avatar: string;
   isQualified?: boolean;
-  group?: string; 
+  group?: string;
   alignment?: { x: number; y: number };
 }
 
@@ -33,8 +33,8 @@ export interface Fixture {
   id: string;
   p1Id: number;
   p2Id: number;
-  score1?: number;
-  score2?: number;
+  score1?: number | null;
+  score2?: number | null;
   status: 'scheduled' | 'finished';
   timestamp: number;
   dayLabel: string;      // Mandatory for strict schedule

@@ -65,5 +65,6 @@ export const FIXTURE_DAYS = [
   "Friday 23",
   "Monday 26",
   "Tuesday 27",
+  "Wednesday 28",
 ];
 

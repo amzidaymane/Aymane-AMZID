@@ -1,5 +1,5 @@
-import { db } from '../firebase'
-import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore'
+import { db } from './firebase'
+import { doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
 import { Match } from '../types'
 
 const REGISTRY_REF = doc(db, 'tournament', 'registry_v1')

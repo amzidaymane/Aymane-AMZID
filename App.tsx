@@ -1,7 +1,7 @@
 console.log("APP START", new Date().toISOString());
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
+import {
   Users, Search, LayoutGrid, Swords, Wifi, WifiOff, List, Grid3X3, AlertTriangle, Database, RefreshCw, HardDrive, ShieldCheck, Lock, Unlock
 } from 'lucide-react';
 import { Player, ViewMode, Fixture } from './types';
@@ -15,68 +15,59 @@ import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
 import { listenFixtures } from './services/fixtures.service'
 
-const [fixtures, setFixtures] = useState<Match[]>([])
-
-useEffect(() => {
-  const unsub = listenFixtures(setFixtures)
-  return () => unsub()
-}, [])
-
-
-
 
 // --- AUTHORITATIVE DATA LOCK ---
-const SEED_VERSION = "2026-01-20_MANAGER_RESTORE_V9"; 
+const SEED_VERSION = "2026-01-20_MANAGER_RESTORE_V9";
 
 const RAW_SCHEDULE = `
-1 | Monday 19 | 1 | Mohamed Amine Chaabani | Mohannad Briouel
-2 | Monday 19 | 2 | Aymane AMZID | Anas Bengamra
-3 | Monday 19 | 3 | Yanis Saidi | Anas Habchi
-4 | Monday 19 | 4 | Mohamed Taha Kebdani | Youssef Fadlaoui
-5 | Monday 19 | 5 | Saad Belkacemi | Elmehdi Mahassine
-6 | Monday 19 | 6 | Wadia Tazi | Kamal Lakhr
-7 | Tuesday 20 | 1 | Anas Nouimi | Youssef Lahrizi
-8 | Tuesday 20 | 2 | Rida Zouaki | Mohamed Karim Nachit
-9 | Tuesday 20 | 3 | Amine Chbihi | Karim Beniouri
-10 | Tuesday 20 | 4 | Nabil Lamkadem | Ilyasse Mbarki
-11 | Tuesday 20 | 5 | Younes Jebbar | Anas Nouimi
-12 | Tuesday 20 | 6 | Anas Hilmi | Rida Zouaki
-13 | Wednesday 21 | 1 | Anas Hilmi | Ilyasse Mbarki
-14 | Wednesday 21 | 2 | Youssef Lahrizi | Karim Beniouri
-15 | Wednesday 21 | 3 | Nabil Lamkadem | Rida Zouaki
-16 | Wednesday 21 | 4 | Younes Jebbar | Amine Chbihi
-17 | Wednesday 21 | 5 | Anas Hilmi | Mohamed Karim Nachit
-18 | Wednesday 21 | 6 | Amine Chbihi | Youssef Lahrizi
-19 | Thursday 22 | 1 | Mohamed Amine Chaabani | Saad Belkacemi
-20 | Thursday 22 | 2 | Mohannad Briouel | Elmehdi Mahassine
-21 | Thursday 22 | 3 | Wadia Tazi | Youssef Fadlaoui
-22 | Thursday 22 | 4 | Mohamed Taha Kebdani | Kamal Lakhr
-23 | Thursday 22 | 5 | Aymane AMZID | Yanis Saidi
-24 | Thursday 22 | 6 | Anas Bengamra | Anas Habchi
-25 | Thursday 22 | 7 | Hatim Essafi | Ilyass Saddik
-26 | Thursday 22 | 8 | Soufiane Belkasmi | Ilyass Saddik
-27 | Friday 23 | 1 | Hatim Essafi | Soufiane Belkasmi
-28 | Friday 23 | 2 | Zakaria Belbaida | Ilyass Saddik
-29 | Friday 23 | 3 | Youssef Fadlaoui | Souhail Boukili
-30 | Friday 23 | 4 | Wadia Tazi | Souhail Boukili
-31 | Friday 23 | 5 | Aymane AMZID | Anas Habchi
-32 | Friday 23 | 6 | Mohamed Amine Chaabani | Elmehdi Mahassine
-33 | Friday 23 | 7 | Souhail Boukili | Kamal Lakhr
-34 | Friday 23 | 8 | Hatim Essafi | Zakaria Belbaida
-35 | Monday 26 | 1 | Nabil Lamkadem | Mohamed Karim Nachit
-36 | Monday 26 | 2 | Younes Jebbar | Karim Beniouri
-37 | Monday 26 | 3 | Ilyasse Mbarki | Rida Zouaki
-38 | Monday 26 | 4 | Anas Nouimi | Karim Beniouri
-39 | Monday 26 | 5 | Anas Hilmi | Nabil Lamkadem
-40 | Monday 26 | 6 | Anas Nouimi | Amine Chbihi
-41 | Monday 26 | 7 | Ilyasse Mbarki | Mohamed Karim Nachit
-42 | Monday 26 | 8 | Younes Jebbar | Youssef Lahrizi
-43 | Tuesday 27 | 1 | Mohamed Taha Kebdani | Souhail Boukili
-44 | Tuesday 27 | 2 | Youssef Fadlaoui | Kamal Lakhr
-45 | Tuesday 27 | 3 | Wadia Tazi | Mohamed Taha Kebdani
-46 | Tuesday 27 | 4 | Mohannad Briouel | Saad Belkacemi
-47 | Tuesday 27 | 5 | Zakaria Belbaida | Soufiane Belkasmi
-48 | Tuesday 27 | 6 | Yanis Saidi | Anas Bengamra
+1 | Monday 19 | 1 | Mohamed Amine Chaabani | Mohannad Briouel | 2 | 3
+2 | Monday 19 | 2 | Aymane AMZID | Anas Bengamra | 4 | 0
+3 | Monday 19 | 3 | Yanis Saidi | Anas Habchi | 0 | 4
+4 | Monday 19 | 4 | Mohamed Taha Kebdani | Youssef Fadlaoui | 0 | 4
+5 | Monday 19 | 5 | Saad Belkacemi | Elmehdi Mahassine | 2 | 0
+6 | Monday 19 | 6 | Wadia Tazi | Kamal Lakhr | 2 | 5
+7 | Tuesday 20 | 1 | Anas Nouimi | Youssef Lahrizi | 2 | 9
+8 | Tuesday 20 | 2 | Rida Zouaki | Mohamed Karim Nachit | 6 | 2
+9 | Tuesday 20 | 3 | Amine Chbihi | Karim Beniouri | 4 | 4
+10 | Tuesday 20 | 4 | Anas Hilmi | Rida Zouaki | 6 | 3
+11 | Tuesday 20 | 5 | Anas Nouimi | Karim Beniouri | 7 | 0
+12 | Wednesday 21 | 1 | Youssef Lahrizi | Karim Beniouri | 5 | 1
+13 | Wednesday 21 | 2 | Nabil Lamkadem | Rida Zouaki | 3 | 2
+14 | Wednesday 21 | 3 | Younes Jebbar | Amine Chbihi | 0 | 4
+15 | Wednesday 21 | 4 | Anas Hilmi | Mohamed Karim Nachit | 8 | 0
+16 | Wednesday 21 | 5 | Amine Chbihi | Youssef Lahrizi | 3 | 2
+17 | Wednesday 21 | 6 | Younes Jebbar | Anas Nouimi | 2 | 3
+18 | Wednesday 21 | 7 | Nabil Lamkadem | Mohamed Karim Nachit | 11 | 2
+19 | Wednesday 21 | 8 | Anas Hilmi | Nabil Lamkadem | 5 | 3
+20 | Thursday 22 | 1 | Youssef Fadlaoui | Souhail Boukili | 2 | 6
+21 | Thursday 22 | 2 | Mohamed Taha Kebdani | Kamal Lakhr | 3 | 8
+22 | Thursday 22 | 3 | Aymane AMZID | Yanis Saidi | 0 | 4
+23 | Thursday 22 | 4 | Wadia Tazi | Souhail Boukili | 0 | 6
+24 | Thursday 22 | 5 | Hatim Essafi | Ilyass Saddik | 5 | 1
+25 | Thursday 22 | 6 | Hatim Essafi | Zakaria Belbaida | 2 | 2
+26 | Friday 23 | 1 | Zakaria Belbaida | Ilyass Saddik | 6 | 0
+27 | Friday 23 | 2 | Souhail Boukili | Kamal Lakhr | 3 | 1
+28 | Friday 23 | 3 | Mohamed Amine Chaabani | Elmehdi Mahassine | 2 | 1
+29 | Friday 23 | 4 | Wadia Tazi | Youssef Fadlaoui | 1 | 5
+30 | Friday 23 | 5 | Soufiane Belkasmi | Ilyass Saddik | 5 | 4
+31 | Monday 26 | 1 | Nabil Lamkadem | Ilyasse Mbarki | - | -
+32 | Monday 26 | 2 | Younes Jebbar | Karim Beniouri | - | -
+33 | Monday 26 | 3 | Ilyasse Mbarki | Rida Zouaki | - | -
+34 | Monday 26 | 4 | Anas Nouimi | Amine Chbihi | - | -
+35 | Monday 26 | 5 | Ilyasse Mbarki | Mohamed Karim Nachit | - | -
+36 | Monday 26 | 6 | Younes Jebbar | Youssef Lahrizi | - | -
+37 | Monday 26 | 7 | Anas Hilmi | Ilyasse Mbarki | - | -
+38 | Tuesday 27 | 1 | Mohamed Taha Kebdani | Souhail Boukili | - | -
+39 | Tuesday 27 | 2 | Youssef Fadlaoui | Kamal Lakhr | - | -
+40 | Tuesday 27 | 3 | Wadia Tazi | Mohamed Taha Kebdani | - | -
+41 | Tuesday 27 | 4 | Mohannad Briouel | Saad Belkacemi | - | -
+42 | Tuesday 27 | 5 | Zakaria Belbaida | Soufiane Belkasmi | - | -
+43 | Tuesday 27 | 6 | Yanis Saidi | Anas Bengamra | - | -
+44 | Wednesday 28 | 1 | Mohamed Amine Chaabani | Saad Belkacemi | - | -
+45 | Wednesday 28 | 2 | Aymane AMZID | Anas Habchi | - | -
+46 | Wednesday 28 | 3 | Mohannad Briouel | Elmehdi Mahassine | - | -
+47 | Wednesday 28 | 4 | Hatim Essafi | Soufiane Belkasmi | - | -
+48 | Wednesday 28 | 5 | Anas Bengamra | Anas Habchi | - | -
 `.trim();
 
 export default function FC26App() {
@@ -91,7 +82,7 @@ export default function FC26App() {
   const local = getLocalData();
   const [players, setPlayers] = useState<Player[]>(local?.players || INITIAL_PLAYERS);
   const [fixtures, setFixtures] = useState<Fixture[]>(local?.fixtures || []);
-  
+
   const [view, setView] = useState<ViewMode>(ViewMode.ROSTER);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -113,24 +104,30 @@ export default function FC26App() {
     return RAW_SCHEDULE.split('\n').map(line => {
       const parts = line.split('|').map(s => s.trim());
       if (parts.length < 5) return null;
-      
+
       const absoluteOrder = parseInt(parts[0]);
       const dLabel = parts[1];
       const mNum = parseInt(parts[2]);
       const p1Name = parts[3];
       const p2Name = parts[4];
+      const score1Str = parts[5]?.trim();
+      const score2Str = parts[6]?.trim();
 
       const p1 = INITIAL_PLAYERS.find(p => p.name === p1Name);
       const p2 = INITIAL_PLAYERS.find(p => p.name === p2Name);
+
+      const hasScore = score1Str && score1Str !== '-' && score2Str && score2Str !== '-';
 
       return {
         id: `fxt-v9-${absoluteOrder}`,
         p1Id: p1?.id || 0,
         p2Id: p2?.id || 0,
-        status: 'scheduled',
-        timestamp: absoluteOrder, 
+        status: hasScore ? 'finished' : 'scheduled',
+        timestamp: absoluteOrder,
         dayLabel: dLabel,
-        matchNumber: mNum
+        matchNumber: mNum,
+        score1: hasScore ? parseInt(score1Str) : null,
+        score2: hasScore ? parseInt(score2Str) : null
       } as Fixture;
     }).filter(f => f !== null) as Fixture[];
   };
@@ -158,17 +155,19 @@ export default function FC26App() {
       try {
         setSyncStatus('syncing');
         const remoteData: any = await fetchRemoteState();
-        
-if (remoteData) {
-  setPlayers(remoteData.players || INITIAL_PLAYERS);
-  setFixtures(remoteData.fixtures || []);
-} else {
-  // fallback only if Firestore is empty/unreachable
-  setPlayers(INITIAL_PLAYERS);
-  setFixtures(parseLockedSchedule());
-}
-          setFixtures(newFixtures);
-          setPlayers(finalPlayers);
+
+        if (remoteData) {
+          setPlayers(remoteData.players || INITIAL_PLAYERS);
+          // FORCE OVERWRITE FIXTURES FROM RAW_SCHEDULE
+          const hardcodedFixtures = parseLockedSchedule();
+          setFixtures(hardcodedFixtures);
+          // Sync to remote to ensure persistence
+          updateRemoteState(remoteData.players || INITIAL_PLAYERS, hardcodedFixtures).catch(console.error);
+        } else {
+          // fallback only if Firestore is empty/unreachable
+          setPlayers(INITIAL_PLAYERS);
+          setFixtures(parseLockedSchedule());
+        }
 
         setSyncStatus('online');
         startSubscription();
@@ -199,8 +198,8 @@ if (remoteData) {
   };
 
   const filteredPlayers = useMemo(() => {
-    return players.filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) || 
+    return players.filter(p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
       TEAMS.find(t => t.id === p.teamId)?.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [players, search]);
@@ -211,7 +210,7 @@ if (remoteData) {
         <div className="absolute top-0 right-0 w-[60vw] h-[60vh] bg-blue-600/5 blur-[160px] rounded-full"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]"></div>
       </div>
-      
+
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl sticky top-0 z-[60]">
           <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
@@ -233,13 +232,13 @@ if (remoteData) {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12 relative z-10">
-{view === ViewMode.GROUPS ? (
-  <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
-) : view === ViewMode.KNOCKOUT ? (
-  <KnockoutStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
-) : view === ViewMode.FIXTURES ? (
-  <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
-) : (
+          {view === ViewMode.GROUPS ? (
+            <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
+          ) : view === ViewMode.KNOCKOUT ? (
+            <KnockoutStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
+          ) : view === ViewMode.FIXTURES ? (
+            <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
+          ) : (
 
             <div className="space-y-12">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -253,13 +252,13 @@ if (remoteData) {
               <div className="flex items-center justify-between border-b border-white/5 pb-8">
                 <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
                 <div className="relative group">
-                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-blue-500 transition-colors"><Search size={14} /></div>
-                   <input type="text" placeholder="SEARCH DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all" />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-blue-500 transition-colors"><Search size={14} /></div>
+                  <input type="text" placeholder="SEARCH DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {filteredPlayers.map(player => (
-                  <PlayerCard key={player.id} player={player} onDelete={() => {}} onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }} isAuthorized={isAuthorized} />
+                  <PlayerCard key={player.id} player={player} onDelete={() => { }} onEdit={(p) => { setEditingPlayer(p); setIsModalOpen(true); }} isAuthorized={isAuthorized} />
                 ))}
               </div>
             </div>
@@ -287,9 +286,9 @@ if (remoteData) {
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 transition-colors group-focus-within:text-blue-500">
                     <Lock size={12} />
                   </div>
-                  <input 
-                    type="password" 
-                    placeholder="MANAGER ACCESS CODE" 
+                  <input
+                    type="password"
+                    placeholder="MANAGER ACCESS CODE"
                     value={accessCode}
                     onChange={(e) => setAccessCode(e.target.value)}
                     className="bg-slate-950/50 border border-white/5 rounded-sm pl-10 pr-6 py-3 text-[10px] font-black tracking-[0.2em] text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all placeholder:text-slate-800"
