@@ -106,11 +106,24 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
 
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
   const filteredPlayers = players.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleOpen = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+    setIsOpen(true);
+  };
 
   if (disabled) {
     return (
@@ -121,9 +134,10 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
   }
 
   return (
-    <div className="relative">
+    <>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={handleOpen}
         className="w-full bg-slate-900/80 border border-white/10 hover:border-blue-500/50 rounded-sm px-3 py-2 text-left flex items-center justify-between transition-all group"
       >
         <span className={`text-sm font-bold uppercase italic tracking-tight truncate ${selectedPlayer ? 'text-white' : 'text-slate-500'}`}>
@@ -134,9 +148,22 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-slate-950 border border-white/20 rounded-sm shadow-2xl z-50 min-w-[280px] w-max max-w-[320px] overflow-hidden">
-            <div className="p-2 border-b border-white/10 sticky top-0 bg-slate-950">
+          {/* Backdrop to close dropdown */}
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={() => { setIsOpen(false); setSearchTerm(""); }}
+          />
+          {/* Dropdown menu - fixed position to escape overflow constraints */}
+          <div
+            className="fixed bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[9999]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: 320,
+              maxHeight: 400,
+            }}
+          >
+            <div className="p-3 border-b border-white/10 bg-slate-950 rounded-t-lg">
               <input
                 type="text"
                 placeholder="Search players..."
@@ -147,7 +174,7 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
                 autoFocus
               />
             </div>
-            <div className="max-h-80 overflow-y-auto">
+            <div className="overflow-y-auto" style={{ maxHeight: 340 }}>
               <button
                 onClick={() => { onSelect(null); setIsOpen(false); setSearchTerm(""); }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-500 hover:bg-white/5 transition-colors flex items-center gap-2 border-b border-white/5"
@@ -174,7 +201,7 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
           </div>
         </>
       )}
-    </div>
+    </>
   );
 };
 
