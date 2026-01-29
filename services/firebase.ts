@@ -8,7 +8,7 @@ import {
   getDoc,
   enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { Player, Fixture } from "../types";
+import { Player, Fixture, KnockoutMatch } from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCLrYmhL9bztbArYelFwSmFITC5axVyCVQ",
@@ -37,6 +37,7 @@ const TOURNAMENT_DOC_ID = "registry_v1";
 export interface TournamentState {
   players: Player[];
   fixtures: Fixture[];
+  knockoutMatches?: KnockoutMatch[];
   lastUpdated: number;
 }
 
@@ -70,17 +71,35 @@ export const fetchRemoteState = async (): Promise<TournamentState | null> => {
   }
 };
 
-export const updateRemoteState = async (players: Player[], fixtures: Fixture[]) => {
+export const updateRemoteState = async (players: Player[], fixtures: Fixture[], knockoutMatches?: KnockoutMatch[]) => {
   try {
-    await setDoc(doc(db, "tournament", TOURNAMENT_DOC_ID), {
+    const data: any = {
       players,
       fixtures,
       lastUpdated: Date.now()
-    }, { merge: false });
+    };
+    if (knockoutMatches !== undefined) {
+      data.knockoutMatches = knockoutMatches;
+    }
+    await setDoc(doc(db, "tournament", TOURNAMENT_DOC_ID), data, { merge: true });
     return true;
   } catch (error: any) {
     console.error("Firebase Update Error:", error);
     alert(`SAVE FAILED: ${error.code}\n${error.message}`);
+    throw error;
+  }
+};
+
+export const updateKnockoutMatches = async (knockoutMatches: KnockoutMatch[]) => {
+  try {
+    await setDoc(doc(db, "tournament", TOURNAMENT_DOC_ID), {
+      knockoutMatches,
+      lastUpdated: Date.now()
+    }, { merge: true });
+    return true;
+  } catch (error: any) {
+    console.error("Firebase Knockout Update Error:", error);
+    alert(`KNOCKOUT SAVE FAILED: ${error.code}\n${error.message}`);
     throw error;
   }
 };

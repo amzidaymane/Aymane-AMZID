@@ -4,13 +4,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Users, Search, LayoutGrid, Swords, Wifi, WifiOff, List, Grid3X3, AlertTriangle, Database, RefreshCw, HardDrive, ShieldCheck, Lock, Unlock
 } from 'lucide-react';
-import { Player, ViewMode, Fixture } from './types';
+import { Player, ViewMode, Fixture, KnockoutMatch } from './types';
 import { INITIAL_PLAYERS, TEAMS } from './constants';
 import { PlayerCard } from './components/PlayerCard';
 import { PlayerModal } from './components/PlayerModal';
 import { GroupStage } from './components/GroupStage';
 import { MatchCenter } from './components/MatchCenter';
-import { subscribeToTournament, updateRemoteState, fetchRemoteState } from './services/firebase';
+import { subscribeToTournament, updateRemoteState, fetchRemoteState, updateKnockoutMatches } from './services/firebase';
 import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
 import { listenFixtures } from './services/fixtures.service'
@@ -82,6 +82,7 @@ export default function FC26App() {
   const local = getLocalData();
   const [players, setPlayers] = useState<Player[]>(local?.players || INITIAL_PLAYERS);
   const [fixtures, setFixtures] = useState<Fixture[]>(local?.fixtures || []);
+  const [knockoutMatches, setKnockoutMatches] = useState<KnockoutMatch[]>([]);
 
   const [view, setView] = useState<ViewMode>(ViewMode.ROSTER);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -139,6 +140,7 @@ export default function FC26App() {
         if (isSyncBlocked.current) return;
         if (state.players) setPlayers(state.players);
         if (state.fixtures) setFixtures(state.fixtures);
+        if (state.knockoutMatches) setKnockoutMatches(state.knockoutMatches);
         setRemoteStats({ p: state.players?.length || 0, f: state.fixtures?.length || 0 });
         setSyncStatus('online');
         setLastError(null);
@@ -165,6 +167,7 @@ export default function FC26App() {
           console.log("LOADED REMOTE DATA", remoteData.fixtures.length);
           setPlayers(remoteData.players || INITIAL_PLAYERS);
           setFixtures(remoteData.fixtures);
+          if (remoteData.knockoutMatches) setKnockoutMatches(remoteData.knockoutMatches);
         } else {
           console.log("NO REMOTE DATA FOUND, SEEDING FROM HARDCODED");
           // Fallback / First run
@@ -201,6 +204,11 @@ export default function FC26App() {
     const newFixtures = fixtures.filter(f => f.id !== id);
     setFixtures(newFixtures);
     try { await updateRemoteState(players, newFixtures); } catch (e) { setSyncStatus('offline'); }
+  };
+
+  const handleUpdateKnockoutMatches = async (matches: KnockoutMatch[]) => {
+    setKnockoutMatches(matches);
+    try { await updateKnockoutMatches(matches); } catch (e) { setSyncStatus('offline'); }
   };
 
   const [rosterView, setRosterView] = useState<'GRID' | 'LIST'>('GRID');
@@ -270,15 +278,19 @@ export default function FC26App() {
           {view === ViewMode.GROUPS ? (
             <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
           ) : view === ViewMode.KNOCKOUT ? (
-            <KnockoutStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
+            <KnockoutStage players={players} knockoutMatches={knockoutMatches} onUpdateKnockoutMatches={handleUpdateKnockoutMatches} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : view === ViewMode.FIXTURES ? (
             <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
           ) : (
 
             <div className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
                   <LayoutGrid size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">VIEW STANDINGS</h3>
+                </button>
+                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:from-amber-500/20 hover:to-slate-900/40 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+                  <h3 className="text-xl font-black text-amber-400 italic uppercase tracking-tighter">KNOCKOUT BRACKET</h3>
                 </button>
                 <button onClick={() => setView(ViewMode.FIXTURES)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
                   <Swords size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">ENTER ARENA</h3>

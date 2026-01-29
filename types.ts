@@ -46,10 +46,11 @@ export type KnockoutMatch = {
   id: string;
   round: KnockoutRound;
   order: number; // display order inside round
-  p1Id: number;
-  p2Id: number;
-  score1?: number;
-  score2?: number;
+  p1Id: number | null; // null means empty slot
+  p2Id: number | null; // null means empty slot
+  score1?: number | null;
+  score2?: number | null;
+  winnerId?: number | null;
   status: 'scheduled' | 'finished';
 };
 
