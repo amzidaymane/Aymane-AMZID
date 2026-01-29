@@ -135,23 +135,24 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-white/20 rounded-sm shadow-2xl z-50 max-h-60 overflow-hidden">
-            <div className="p-2 border-b border-white/10">
+          <div className="absolute top-full left-0 mt-1 bg-slate-950 border border-white/20 rounded-sm shadow-2xl z-50 min-w-[280px] w-max max-w-[320px] overflow-hidden">
+            <div className="p-2 border-b border-white/10 sticky top-0 bg-slate-950">
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search players..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded-sm px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-slate-900 border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
                 onClick={(e) => e.stopPropagation()}
+                autoFocus
               />
             </div>
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               <button
                 onClick={() => { onSelect(null); setIsOpen(false); setSearchTerm(""); }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-500 hover:bg-white/5 transition-colors flex items-center gap-2"
+                className="w-full px-4 py-3 text-left text-sm text-slate-500 hover:bg-white/5 transition-colors flex items-center gap-2 border-b border-white/5"
               >
-                <X size={12} /> Clear Selection
+                <X size={14} /> Clear Selection
               </button>
               {filteredPlayers.map(player => {
                 const team = TEAMS.find(t => t.id === player.teamId);
@@ -159,12 +160,12 @@ const PlayerDropdown: React.FC<PlayerDropdownProps> = ({
                   <button
                     key={player.id}
                     onClick={() => { onSelect(player.id); setIsOpen(false); setSearchTerm(""); }}
-                    className={`w-full px-3 py-2 text-left hover:bg-white/10 transition-colors flex items-center gap-3 ${selectedPlayerId === player.id ? 'bg-blue-600/20' : ''}`}
+                    className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-center gap-3 border-b border-white/5 ${selectedPlayerId === player.id ? 'bg-blue-600/20' : ''}`}
                   >
-                    <img src={player.avatar} alt="" className="w-6 h-6 rounded-full border border-white/10" />
+                    <img src={player.avatar} alt="" className="w-8 h-8 rounded-full border border-white/10" />
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-white uppercase italic truncate block">{player.name}</span>
-                      <span className="text-[10px] text-slate-500">{team?.name} • Group {player.group}</span>
+                      <span className="text-sm font-bold text-white uppercase italic truncate block">{player.name}</span>
+                      <span className="text-xs text-slate-500">{team?.name} • Group {player.group}</span>
                     </div>
                   </button>
                 );
@@ -380,8 +381,8 @@ export const KnockoutStage: React.FC<KnockoutStageProps> = ({
             onClick={handleSave}
             disabled={!hasChanges}
             className={`flex items-center gap-3 px-6 py-3 rounded-sm font-black text-sm uppercase tracking-wider transition-all ${hasChanges
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+              ? 'bg-blue-600 hover:bg-blue-500 text-white'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }`}
           >
             <Save size={16} />
