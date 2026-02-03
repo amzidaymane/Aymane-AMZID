@@ -373,7 +373,7 @@ export default function FC26App() {
               </button>
 
               {/* Quick Stats Bar */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
                   <p className="text-2xl font-black text-white">{fixtures.filter(f => f.status === 'finished').length}</p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Matches Played</p>
@@ -385,10 +385,6 @@ export default function FC26App() {
                 <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
                   <p className="text-2xl font-black text-emerald-400">{sortedPlayersForRanking[0]?.name.split(' ').slice(-1)[0] || '-'}</p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Top Scorer</p>
-                </div>
-                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
-                  <p className="text-2xl font-black text-blue-400">{fixtures.filter(f => f.status === 'scheduled').length}</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Upcoming</p>
                 </div>
               </div>
 
