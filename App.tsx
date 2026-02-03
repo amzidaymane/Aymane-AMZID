@@ -164,22 +164,20 @@ export default function FC26App() {
         }
 
         const hardcoded = parseLockedSchedule();
-        const remoteSeedVersion = remoteData?.seedVersion;
-        const needsReseed = !remoteData || !remoteData.fixtures || remoteData.fixtures.length === 0 || remoteSeedVersion !== SEED_VERSION;
+        // Only seed if Firebase is completely empty - never overwrite existing data
+        const needsInitialSeed = !remoteData || !remoteData.fixtures || remoteData.fixtures.length === 0;
 
-        if (needsReseed) {
-          console.log("RESEEDING FROM HARDCODED - Version:", SEED_VERSION, "Remote Version:", remoteSeedVersion);
+        if (needsInitialSeed) {
+          console.log("INITIAL SEED - Firebase is empty, seeding from hardcoded schedule");
           setPlayers(INITIAL_PLAYERS);
           setFixtures(hardcoded);
-          // Preserve knockout matches if they exist
-          const existingKnockout = remoteData?.knockoutMatches || [];
-          if (existingKnockout.length > 0) setKnockoutMatches(existingKnockout);
-          // Seed the DB with new version
-          updateRemoteState(INITIAL_PLAYERS, hardcoded, existingKnockout.length > 0 ? existingKnockout : undefined)
+          // Seed the DB
+          updateRemoteState(INITIAL_PLAYERS, hardcoded)
             .then(() => updateSeedVersion(SEED_VERSION))
             .catch(console.error);
         } else {
-          console.log("LOADED REMOTE DATA", remoteData.fixtures.length);
+          // Firebase has data - ALWAYS use it, never overwrite
+          console.log("LOADED REMOTE DATA - Firebase is the source of truth", remoteData.fixtures.length, "fixtures");
           setPlayers(remoteData.players || INITIAL_PLAYERS);
           setFixtures(remoteData.fixtures);
           if (remoteData.knockoutMatches) setKnockoutMatches(remoteData.knockoutMatches);
