@@ -303,28 +303,123 @@ export default function FC26App() {
             <PlayoffGroups players={players} playoffFixtures={playoffFixtures} onUpdatePlayoffFixtures={handleUpdatePlayoffFixtures} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : (
 
-            <div className="space-y-12">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:bg-slate-900/40 transition-all">
-                  <LayoutGrid size={28} className="text-slate-500" />
-                  <h3 className="text-sm md:text-lg font-black text-white italic uppercase tracking-tighter text-center">Standings</h3>
+            <div className="space-y-8">
+              {/* Tournament Phase Timeline */}
+              <div className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Tournament Progress</span>
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">Phase 2 of 3</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Group Stage - Complete */}
+                  <div className="flex-1 h-2 rounded-full bg-emerald-500/30 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"></div>
+                  </div>
+                  {/* Playoff - Active */}
+                  <div className="flex-1 h-2 rounded-full bg-orange-500/20 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
+                  {/* Knockout - Pending */}
+                  <div className="flex-1 h-2 rounded-full bg-slate-800"></div>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wider">Groups ✓</span>
+                  <span className="text-[8px] font-black text-orange-400 uppercase tracking-wider">Playoffs ●</span>
+                  <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider">Knockout</span>
+                </div>
+              </div>
+
+              {/* Hero Card - Current Phase */}
+              <button
+                onClick={() => setView(ViewMode.PLAYOFF)}
+                className="group relative w-full overflow-hidden rounded-lg border-2 border-orange-500/40 bg-gradient-to-br from-orange-500/20 via-slate-950/80 to-slate-950 p-8 md:p-12 transition-all hover:border-orange-400/60 hover:shadow-[0_0_60px_rgba(249,115,22,0.15)]"
+              >
+                {/* Glow Effect */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-6">
+                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M12 2v2" />
+                        <path d="M12 14v8" />
+                        <path d="M9 18h6" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-2 py-1 bg-orange-500/30 text-orange-400 text-[8px] font-black uppercase tracking-wider rounded">
+                          ● Live Now
+                        </span>
+                      </div>
+                      <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tight leading-none">
+                        Playoff Groups
+                      </h2>
+                      <p className="text-sm text-slate-400 mt-2 not-italic">
+                        6 players fighting for 4 knockout spots
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-orange-400 group-hover:translate-x-2 transition-transform">
+                    <span className="text-sm font-black uppercase tracking-wider">Enter</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+
+              {/* Quick Stats Bar */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-black text-white">{fixtures.filter(f => f.status === 'finished').length}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Matches Played</p>
+                </div>
+                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-black text-amber-400">{players.length}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Athletes</p>
+                </div>
+                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-black text-emerald-400">{sortedPlayersForRanking[0]?.name.split(' ').slice(-1)[0] || '-'}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Top Scorer</p>
+                </div>
+                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-black text-blue-400">{fixtures.filter(f => f.status === 'scheduled').length}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Upcoming</p>
+                </div>
+              </div>
+
+              {/* Secondary Navigation */}
+              <div className="grid grid-cols-3 gap-4">
+                <button onClick={() => setView(ViewMode.GROUPS)} className="group border border-white/10 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-white/20 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                    <LayoutGrid size={18} className="text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Standings</h3>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Group rankings</p>
+                  </div>
                 </button>
-                <button onClick={() => setView(ViewMode.PLAYOFF)} className="border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:from-orange-500/20 hover:to-slate-900/40 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400">
-                    <circle cx="12" cy="8" r="6" />
-                    <path d="M12 2v2" />
-                    <path d="M12 14v8" />
-                    <path d="M9 18h6" />
-                  </svg>
-                  <h3 className="text-sm md:text-lg font-black text-orange-400 italic uppercase tracking-tighter text-center">Playoff</h3>
+                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="group border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent p-5 rounded-lg flex items-center gap-4 hover:from-amber-500/10 hover:border-amber-500/30 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-black text-amber-400 uppercase tracking-tight">Knockout</h3>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Bracket view</p>
+                  </div>
                 </button>
-                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:from-amber-500/20 hover:to-slate-900/40 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
-                  <h3 className="text-sm md:text-lg font-black text-amber-400 italic uppercase tracking-tighter text-center">Knockout</h3>
-                </button>
-                <button onClick={() => setView(ViewMode.FIXTURES)} className="border border-white/5 bg-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:bg-slate-900/40 transition-all">
-                  <Swords size={28} className="text-slate-500" />
-                  <h3 className="text-sm md:text-lg font-black text-white italic uppercase tracking-tighter text-center">Arena</h3>
+                <button onClick={() => setView(ViewMode.FIXTURES)} className="group border border-white/10 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-white/20 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                    <Swords size={18} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Arena</h3>
+                    <p className="text-[9px] text-slate-500 mt-0.5">All fixtures</p>
+                  </div>
                 </button>
               </div>
               <div className="flex items-center justify-between border-b border-white/5 pb-8">

@@ -373,13 +373,22 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
       {/* Subtle Top Highlight */}
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
-      {/* Match Label */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
-        <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] italic">MATCH {fixture.matchNumber}</span>
+      {/* Match Label + Status Badge */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-3">
+        <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em] italic">MATCH {fixture.matchNumber}</span>
+        {isFinished ? (
+          <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[7px] font-black text-emerald-400 uppercase tracking-wider">
+            ✓ Final
+          </span>
+        ) : (
+          <span className="px-2 py-0.5 bg-slate-500/20 border border-slate-500/30 rounded text-[7px] font-black text-slate-400 uppercase tracking-wider">
+            Scheduled
+          </span>
+        )}
       </div>
 
       {/* Content */}
-      <div className="relative p-6 px-4 pt-8 flex items-center justify-between gap-2 md:gap-4 z-10 w-full h-full min-h-[140px]">
+      <div className="relative p-6 px-4 pt-10 flex items-center justify-between gap-2 md:gap-4 z-10 w-full h-full min-h-[150px]">
 
         {/* Player 1 (Left) */}
         <div className="flex-1 w-0 flex items-center gap-3">
@@ -402,13 +411,13 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
         </div>
 
         {/* Center (Scores / VS) */}
-        <div className="flex flex-col items-center justify-center shrink-0 w-24 md:w-32 relative h-16">
+        <div className="flex flex-col items-center justify-center shrink-0 w-28 md:w-36 relative h-16">
           {(!isFinished || isEditing) && isAuthorized ? (
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-slate-950/90 p-4 rounded-lg border border-white/10 backdrop-blur-xl z-20 shadow-2xl animate-in zoom-in-95 duration-200">
               <div className="flex items-center gap-2">
-                <input type="number" value={s1} onChange={e => setS1(Math.max(0, parseInt(e.target.value) || 0))} className="w-10 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-lg font-bold text-white focus:border-blue-500 outline-none" />
-                <span className="text-slate-600 font-bold text-xs">:</span>
-                <input type="number" value={s2} onChange={e => setS2(Math.max(0, parseInt(e.target.value) || 0))} className="w-10 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-lg font-bold text-white focus:border-blue-500 outline-none" />
+                <input type="number" value={s1} onChange={e => setS1(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-xl font-bold text-white focus:border-blue-500 outline-none" />
+                <span className="text-slate-600 font-bold text-sm">:</span>
+                <input type="number" value={s2} onChange={e => setS2(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 bg-black/40 border border-white/10 rounded-sm py-1 text-center text-xl font-bold text-white focus:border-blue-500 outline-none" />
               </div>
               <div className="flex gap-1 w-full">
                 <button onClick={() => { onFinalize(fixture.id, s1, s2); setIsEditing(false); }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm font-bold text-[8px] uppercase tracking-widest">Save</button>
@@ -418,16 +427,23 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
           ) : (
             <div className="flex flex-col items-center gap-1 transition-all duration-300">
               {isFinished ? (
-                <div className="flex items-center gap-2 md:gap-4 text-2xl md:text-3xl font-black italic text-white leading-none">
-                  <span className={fixture.score1! > fixture.score2! ? 'text-white drop-shadow-sm' : 'text-slate-700'}>{fixture.score1}</span>
-                  <span className="text-sm text-slate-600 self-center font-normal">VS</span>
-                  <span className={fixture.score2! > fixture.score1! ? 'text-white drop-shadow-sm' : 'text-slate-700'}>{fixture.score2}</span>
+                <div className="flex items-center gap-3 md:gap-5">
+                  <span className={`text-3xl md:text-4xl font-black italic leading-none transition-all ${fixture.score1! > fixture.score2!
+                      ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                      : 'text-slate-600'
+                    }`}>{fixture.score1}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] text-slate-600 font-black uppercase tracking-wider">VS</span>
+                  </div>
+                  <span className={`text-3xl md:text-4xl font-black italic leading-none transition-all ${fixture.score2! > fixture.score1!
+                      ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                      : 'text-slate-600'
+                    }`}>{fixture.score2}</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 opacity-30">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
-                  <span className="text-[10px] font-black text-slate-500 italic">VS</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                <div className="flex items-center gap-2 py-2 px-4 bg-slate-800/50 rounded-full border border-white/5">
+                  <div className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></div>
+                  <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Awaiting</span>
                 </div>
               )}
 

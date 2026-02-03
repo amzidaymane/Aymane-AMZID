@@ -164,22 +164,52 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
 
               {group.players.map((p, pIdx) => {
                 const team = TEAMS.find((t) => t.id === p.teamId);
+                const isQualifying = pIdx <= 1; // Top 2 qualify
+                const isEliminated = pIdx >= 4; // Bottom positions
+                const totalPlayers = group.players.length;
+                const isDanger = pIdx === 2 || pIdx === 3; // Middle positions - in contention
+
                 return (
                   <div
                     key={p.id}
-                    className="relative grid grid-cols-[1fr_repeat(8,40px)] gap-2 items-center p-4 rounded-sm border border-white/5 bg-slate-900/20"
+                    className={`relative grid grid-cols-[1fr_repeat(8,40px)] gap-2 items-center p-4 rounded-sm border transition-all duration-300 hover:scale-[1.01] ${isQualifying
+                        ? 'border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent hover:from-emerald-500/15'
+                        : isEliminated
+                          ? 'border-rose-500/20 bg-gradient-to-r from-rose-500/5 to-transparent hover:from-rose-500/10'
+                          : 'border-white/5 bg-slate-900/20 hover:bg-slate-900/40'
+                      }`}
                   >
+                    {/* Qualification Zone Indicator */}
+                    {isQualifying && (
+                      <div className="absolute -left-0.5 top-2 bottom-2 w-1 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                    )}
+                    {isEliminated && (
+                      <div className="absolute -left-0.5 top-2 bottom-2 w-1 bg-gradient-to-b from-rose-500 to-rose-600 rounded-full" />
+                    )}
+
                     <div className="flex items-center space-x-4 min-w-0">
-                      <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[10px] font-black italic rounded-sm border bg-slate-900 text-slate-600 border-white/10">
+                      <div className={`w-6 h-6 flex-shrink-0 flex items-center justify-center text-[10px] font-black italic rounded-sm border ${isQualifying
+                          ? 'bg-emerald-500 text-black border-emerald-400'
+                          : isEliminated
+                            ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                            : 'bg-slate-900 text-slate-600 border-white/10'
+                        }`}>
                         {pIdx + 1}
                       </div>
                       <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 bg-slate-950 rounded-sm border border-white/10 overflow-hidden">
-                          <img src={p.avatar} alt="" className="w-full h-full object-cover grayscale-[30%]" />
+                        <div className={`w-10 h-10 bg-slate-950 rounded-sm border overflow-hidden ${isQualifying ? 'border-emerald-500/30' : 'border-white/10'
+                          }`}>
+                          <img src={p.avatar} alt="" className={`w-full h-full object-cover ${isEliminated ? 'grayscale opacity-60' : 'grayscale-[30%]'}`} />
                         </div>
+                        {isQualifying && pIdx === 0 && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                            <Trophy size={10} className="text-black" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-white uppercase italic tracking-tight leading-none truncate">
+                        <p className={`text-sm font-black uppercase italic tracking-tight leading-none truncate ${isEliminated ? 'text-slate-500' : 'text-white'
+                          }`}>
                           {p.name}
                         </p>
                         <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest italic mt-1">
@@ -194,10 +224,18 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
                     <span className="text-sm font-black text-slate-800 italic text-center">{p.losses}</span>
                     <span className="text-sm font-black text-slate-500 italic text-center">{p.gf}</span>
                     <span className="text-sm font-black text-slate-500 italic text-center">{p.ga}</span>
-                    <span className="text-sm font-black text-slate-500 italic text-center">{p.gd}</span>
+                    <span className={`text-sm font-black italic text-center ${p.gd > 0 ? 'text-emerald-400' : p.gd < 0 ? 'text-rose-400' : 'text-slate-500'
+                      }`}>
+                      {p.gd > 0 ? `+${p.gd}` : p.gd}
+                    </span>
 
                     <div className="flex items-center justify-center">
-                      <div className="w-full py-1 rounded-sm bg-blue-600 text-white text-center font-black italic text-sm">
+                      <div className={`w-full py-1 rounded-sm text-center font-black italic text-sm ${isQualifying
+                          ? 'bg-emerald-500 text-black'
+                          : isEliminated
+                            ? 'bg-rose-500/30 text-rose-400'
+                            : 'bg-blue-600 text-white'
+                        }`}>
                         {p.points}
                       </div>
                     </div>
@@ -209,17 +247,24 @@ export const GroupStage: React.FC<GroupStageProps> = ({ players, fixtures, onBac
         ))}
       </div>
 
-      <div className="glass-panel p-8 flex flex-wrap items-center justify-center gap-10 border border-white/10 rounded-sm">
+      {/* Legend */}
+      <div className="glass-panel p-6 flex flex-wrap items-center justify-center gap-8 border border-white/10 rounded-sm">
         <div className="flex items-center space-x-3">
-          <Award size={14} className="text-blue-500" />
-          <span className="text-[9px] font-black text-white uppercase tracking-[0.3em] italic leading-none">
-            Automated Standing Calculation
+          <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+          <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] italic">
+            Qualification Zone
           </span>
         </div>
         <div className="flex items-center space-x-3">
-          <ShieldCheck size={14} className="text-blue-400" />
+          <div className="w-3 h-3 bg-rose-500/50 rounded-full" />
+          <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.2em] italic">
+            Elimination Zone
+          </span>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Award size={14} className="text-blue-500" />
           <span className="text-[9px] font-black text-white uppercase tracking-[0.3em] italic leading-none">
-            Strict Group Isolation
+            Auto-Calculated
           </span>
         </div>
       </div>
