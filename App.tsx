@@ -17,7 +17,7 @@ import { listenFixtures } from './services/fixtures.service'
 
 
 // --- AUTHORITATIVE DATA LOCK ---
-const SEED_VERSION = "2026-01-20_MANAGER_RESTORE_V9";
+const SEED_VERSION = "2026-02-03_SCORE_CORRECTIONS_V10";
 
 const RAW_SCHEDULE = `
 1 | Monday 19 | 1 | Mohamed Amine Chaabani | Mohannad Briouel | 2 | 3
@@ -41,7 +41,7 @@ const RAW_SCHEDULE = `
 19 | Wednesday 21 | 8 | Anas Hilmi | Nabil Lamkadem | 5 | 3
 20 | Thursday 22 | 1 | Youssef Fadlaoui | Souhail Boukili | 2 | 6
 21 | Thursday 22 | 2 | Mohamed Taha Kebdani | Kamal Lakhr | 3 | 8
-22 | Thursday 22 | 3 | Aymane AMZID | Yanis Saidi | 0 | 4
+22 | Thursday 22 | 3 | Aymane AMZID | Yanis Saidi | 4 | 0
 23 | Thursday 22 | 4 | Wadia Tazi | Souhail Boukili | 0 | 6
 24 | Thursday 22 | 5 | Hatim Essafi | Ilyass Saddik | 5 | 1
 25 | Thursday 22 | 6 | Hatim Essafi | Zakaria Belbaida | 2 | 2
@@ -50,23 +50,23 @@ const RAW_SCHEDULE = `
 28 | Friday 23 | 3 | Mohamed Amine Chaabani | Elmehdi Mahassine | 2 | 1
 29 | Friday 23 | 4 | Wadia Tazi | Youssef Fadlaoui | 1 | 5
 30 | Friday 23 | 5 | Soufiane Belkasmi | Ilyass Saddik | 5 | 4
-31 | Monday 26 | 1 | Nabil Lamkadem | Ilyasse Mbarki | - | -
+31 | Monday 26 | 1 | Nabil Lamkadem | Ilyasse Mbarki | 1 | 5
 32 | Monday 26 | 2 | Younes Jebbar | Karim Beniouri | - | -
-33 | Monday 26 | 3 | Ilyasse Mbarki | Rida Zouaki | - | -
+33 | Monday 26 | 3 | Ilyasse Mbarki | Rida Zouaki | 4 | 5
 34 | Monday 26 | 4 | Anas Nouimi | Amine Chbihi | - | -
-35 | Monday 26 | 5 | Ilyasse Mbarki | Mohamed Karim Nachit | - | -
+35 | Monday 26 | 5 | Ilyasse Mbarki | Mohamed Karim Nachit | 6 | 2
 36 | Monday 26 | 6 | Younes Jebbar | Youssef Lahrizi | - | -
-37 | Monday 26 | 7 | Anas Hilmi | Ilyasse Mbarki | - | -
-38 | Tuesday 27 | 1 | Mohamed Taha Kebdani | Souhail Boukili | - | -
-39 | Tuesday 27 | 2 | Youssef Fadlaoui | Kamal Lakhr | - | -
-40 | Tuesday 27 | 3 | Wadia Tazi | Mohamed Taha Kebdani | - | -
-41 | Tuesday 27 | 4 | Mohannad Briouel | Saad Belkacemi | - | -
-42 | Tuesday 27 | 5 | Zakaria Belbaida | Soufiane Belkasmi | - | -
-43 | Tuesday 27 | 6 | Yanis Saidi | Anas Bengamra | - | -
-44 | Wednesday 28 | 1 | Mohamed Amine Chaabani | Saad Belkacemi | - | -
-45 | Wednesday 28 | 2 | Aymane AMZID | Anas Habchi | - | -
-46 | Wednesday 28 | 3 | Mohannad Briouel | Elmehdi Mahassine | - | -
-47 | Wednesday 28 | 4 | Hatim Essafi | Soufiane Belkasmi | - | -
+37 | Monday 26 | 7 | Anas Hilmi | Ilyasse Mbarki | 2 | 8
+38 | Tuesday 27 | 1 | Mohamed Taha Kebdani | Souhail Boukili | 1 | 3
+39 | Tuesday 27 | 2 | Youssef Fadlaoui | Kamal Lakhr | 0 | 6
+40 | Tuesday 27 | 3 | Wadia Tazi | Mohamed Taha Kebdani | 1 | 5
+41 | Tuesday 27 | 4 | Mohannad Briouel | Saad Belkacemi | 2 | 1
+42 | Tuesday 27 | 5 | Zakaria Belbaida | Soufiane Belkasmi | 5 | 2
+43 | Tuesday 27 | 6 | Yanis Saidi | Anas Bengamra | 3 | 4
+44 | Wednesday 28 | 1 | Mohamed Amine Chaabani | Saad Belkacemi | 3 | 5
+45 | Wednesday 28 | 2 | Aymane AMZID | Anas Habchi | 4 | 3
+46 | Wednesday 28 | 3 | Mohannad Briouel | Elmehdi Mahassine | 3 | 0
+47 | Wednesday 28 | 4 | Hatim Essafi | Soufiane Belkasmi | 0 | 2
 48 | Wednesday 28 | 5 | Anas Bengamra | Anas Habchi | - | -
 `.trim();
 
