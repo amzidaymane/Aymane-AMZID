@@ -10,7 +10,7 @@ import { PlayerCard } from './components/PlayerCard';
 import { PlayerModal } from './components/PlayerModal';
 import { GroupStage } from './components/GroupStage';
 import { MatchCenter } from './components/MatchCenter';
-import { subscribeToTournament, updateRemoteState, fetchRemoteState, updateKnockoutMatches } from './services/firebase';
+import { subscribeToTournament, updateRemoteState, fetchRemoteState, updateKnockoutMatches, updateSeedVersion } from './services/firebase';
 import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
 import { listenFixtures } from './services/fixtures.service'
@@ -163,19 +163,26 @@ export default function FC26App() {
           console.warn("Remote fetch failed, falling back to local/hardcoded", e);
         }
 
-        if (remoteData && remoteData.fixtures && remoteData.fixtures.length > 0) {
+        const hardcoded = parseLockedSchedule();
+        const remoteSeedVersion = remoteData?.seedVersion;
+        const needsReseed = !remoteData || !remoteData.fixtures || remoteData.fixtures.length === 0 || remoteSeedVersion !== SEED_VERSION;
+
+        if (needsReseed) {
+          console.log("RESEEDING FROM HARDCODED - Version:", SEED_VERSION, "Remote Version:", remoteSeedVersion);
+          setPlayers(INITIAL_PLAYERS);
+          setFixtures(hardcoded);
+          // Preserve knockout matches if they exist
+          const existingKnockout = remoteData?.knockoutMatches || [];
+          if (existingKnockout.length > 0) setKnockoutMatches(existingKnockout);
+          // Seed the DB with new version
+          updateRemoteState(INITIAL_PLAYERS, hardcoded, existingKnockout.length > 0 ? existingKnockout : undefined)
+            .then(() => updateSeedVersion(SEED_VERSION))
+            .catch(console.error);
+        } else {
           console.log("LOADED REMOTE DATA", remoteData.fixtures.length);
           setPlayers(remoteData.players || INITIAL_PLAYERS);
           setFixtures(remoteData.fixtures);
           if (remoteData.knockoutMatches) setKnockoutMatches(remoteData.knockoutMatches);
-        } else {
-          console.log("NO REMOTE DATA FOUND, SEEDING FROM HARDCODED");
-          // Fallback / First run
-          setPlayers(INITIAL_PLAYERS);
-          const hardcoded = parseLockedSchedule();
-          setFixtures(hardcoded);
-          // Seed the DB so next time we find it
-          updateRemoteState(INITIAL_PLAYERS, hardcoded).catch(console.error);
         }
 
         setSyncStatus('online');

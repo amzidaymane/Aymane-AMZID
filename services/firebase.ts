@@ -103,3 +103,16 @@ export const updateKnockoutMatches = async (knockoutMatches: KnockoutMatch[]) =>
     throw error;
   }
 };
+
+export const updateSeedVersion = async (version: string) => {
+  try {
+    await setDoc(doc(db, "tournament", TOURNAMENT_DOC_ID), {
+      seedVersion: version,
+      lastUpdated: Date.now()
+    }, { merge: true });
+    return true;
+  } catch (error: any) {
+    console.error("Firebase Seed Version Update Error:", error);
+    throw error;
+  }
+};
