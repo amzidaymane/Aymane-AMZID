@@ -8,7 +8,7 @@ import {
   getDoc,
   enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { Player, Fixture, KnockoutMatch } from "../types";
+import { Player, Fixture, KnockoutMatch, PlayoffFixture } from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCLrYmhL9bztbArYelFwSmFITC5axVyCVQ",
@@ -38,7 +38,9 @@ export interface TournamentState {
   players: Player[];
   fixtures: Fixture[];
   knockoutMatches?: KnockoutMatch[];
+  playoffFixtures?: PlayoffFixture[];
   lastUpdated: number;
+  seedVersion?: string;
 }
 
 export const subscribeToTournament = (
@@ -113,6 +115,20 @@ export const updateSeedVersion = async (version: string) => {
     return true;
   } catch (error: any) {
     console.error("Firebase Seed Version Update Error:", error);
+    throw error;
+  }
+};
+
+export const updatePlayoffFixtures = async (playoffFixtures: PlayoffFixture[]) => {
+  try {
+    await setDoc(doc(db, "tournament", TOURNAMENT_DOC_ID), {
+      playoffFixtures,
+      lastUpdated: Date.now()
+    }, { merge: true });
+    return true;
+  } catch (error: any) {
+    console.error("Firebase Playoff Update Error:", error);
+    alert(`PLAYOFF SAVE FAILED: ${error.code}\n${error.message}`);
     throw error;
   }
 };

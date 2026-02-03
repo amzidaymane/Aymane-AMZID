@@ -16,6 +16,7 @@ export interface Player {
   losses: number;
   avatar: string;
   isQualified?: boolean;
+  isForfeited?: boolean;
   group?: string;
   alignment?: { x: number; y: number };
 }
@@ -54,6 +55,16 @@ export type KnockoutMatch = {
   status: 'scheduled' | 'finished';
 };
 
+export interface PlayoffFixture {
+  id: string;
+  playoffGroup: 1 | 2;
+  p1Id: number;
+  p2Id: number;
+  score1?: number | null;
+  score2?: number | null;
+  status: 'scheduled' | 'finished';
+}
+
 export enum ViewMode {
   ROSTER = 'ROSTER',
   LEADERBOARD = 'LEADERBOARD',
@@ -61,6 +72,6 @@ export enum ViewMode {
   GROUPS = 'GROUPS',
   FIXTURES = 'FIXTURES',
   KNOCKOUT = 'KNOCKOUT',
-
+  PLAYOFF = 'PLAYOFF',
 }
 

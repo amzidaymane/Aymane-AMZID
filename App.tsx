@@ -4,16 +4,17 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Users, Search, LayoutGrid, Swords, Wifi, WifiOff, List, Grid3X3, AlertTriangle, Database, RefreshCw, HardDrive, ShieldCheck, Lock, Unlock
 } from 'lucide-react';
-import { Player, ViewMode, Fixture, KnockoutMatch } from './types';
+import { Player, ViewMode, Fixture, KnockoutMatch, PlayoffFixture } from './types';
 import { INITIAL_PLAYERS, TEAMS } from './constants';
 import { PlayerCard } from './components/PlayerCard';
 import { PlayerModal } from './components/PlayerModal';
 import { GroupStage } from './components/GroupStage';
 import { MatchCenter } from './components/MatchCenter';
-import { subscribeToTournament, updateRemoteState, fetchRemoteState, updateKnockoutMatches, updateSeedVersion } from './services/firebase';
+import { subscribeToTournament, updateRemoteState, fetchRemoteState, updateKnockoutMatches, updateSeedVersion, updatePlayoffFixtures } from './services/firebase';
 import { saveLocalData, getLocalData } from './services/persistence';
 import { KnockoutStage } from './components/KnockoutStage';
 import { listenFixtures } from './services/fixtures.service'
+import { PlayoffGroups } from './components/PlayoffGroups';
 
 
 // --- AUTHORITATIVE DATA LOCK ---
@@ -83,6 +84,7 @@ export default function FC26App() {
   const [players, setPlayers] = useState<Player[]>(local?.players || INITIAL_PLAYERS);
   const [fixtures, setFixtures] = useState<Fixture[]>(local?.fixtures || []);
   const [knockoutMatches, setKnockoutMatches] = useState<KnockoutMatch[]>([]);
+  const [playoffFixtures, setPlayoffFixtures] = useState<PlayoffFixture[]>([]);
 
   const [view, setView] = useState<ViewMode>(ViewMode.ROSTER);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,6 +143,7 @@ export default function FC26App() {
         if (state.players) setPlayers(state.players);
         if (state.fixtures) setFixtures(state.fixtures);
         if (state.knockoutMatches) setKnockoutMatches(state.knockoutMatches);
+        if (state.playoffFixtures) setPlayoffFixtures(state.playoffFixtures);
         setRemoteStats({ p: state.players?.length || 0, f: state.fixtures?.length || 0 });
         setSyncStatus('online');
         setLastError(null);
@@ -216,6 +219,16 @@ export default function FC26App() {
     try { await updateKnockoutMatches(matches); } catch (e) { setSyncStatus('offline'); }
   };
 
+  const handleUpdatePlayoffFixtures = async (fixtures: PlayoffFixture[]) => {
+    setPlayoffFixtures(fixtures);
+    try { await updatePlayoffFixtures(fixtures); } catch (e) { setSyncStatus('offline'); }
+  };
+
+  // Players eligible for knockout (exclude forfeited players like Aymane AMZID)
+  const knockoutEligiblePlayers = useMemo(() => {
+    return players.filter(p => !p.isForfeited && p.name !== 'Aymane AMZID');
+  }, [players]);
+
   const [rosterView, setRosterView] = useState<'GRID' | 'LIST'>('GRID');
 
   // ... (existing effects)
@@ -283,22 +296,35 @@ export default function FC26App() {
           {view === ViewMode.GROUPS ? (
             <GroupStage players={players} fixtures={fixtures} onBack={() => setView(ViewMode.ROSTER)} />
           ) : view === ViewMode.KNOCKOUT ? (
-            <KnockoutStage players={players} knockoutMatches={knockoutMatches} onUpdateKnockoutMatches={handleUpdateKnockoutMatches} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
+            <KnockoutStage players={knockoutEligiblePlayers} knockoutMatches={knockoutMatches} onUpdateKnockoutMatches={handleUpdateKnockoutMatches} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : view === ViewMode.FIXTURES ? (
             <MatchCenter players={players} fixtures={fixtures} onUpdateFixtures={handleSetFixtures} onUpdatePlayer={handleUpdatePlayer} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} onDeleteFixture={deleteFixture} />
+          ) : view === ViewMode.PLAYOFF ? (
+            <PlayoffGroups players={players} playoffFixtures={playoffFixtures} onUpdatePlayoffFixtures={handleUpdatePlayoffFixtures} onBack={() => setView(ViewMode.ROSTER)} isAuthorized={isAuthorized} />
           ) : (
 
             <div className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
-                  <LayoutGrid size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">VIEW STANDINGS</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <button onClick={() => setView(ViewMode.GROUPS)} className="border border-white/5 bg-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:bg-slate-900/40 transition-all">
+                  <LayoutGrid size={28} className="text-slate-500" />
+                  <h3 className="text-sm md:text-lg font-black text-white italic uppercase tracking-tighter text-center">Standings</h3>
                 </button>
-                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:from-amber-500/20 hover:to-slate-900/40 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
-                  <h3 className="text-xl font-black text-amber-400 italic uppercase tracking-tighter">KNOCKOUT BRACKET</h3>
+                <button onClick={() => setView(ViewMode.PLAYOFF)} className="border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:from-orange-500/20 hover:to-slate-900/40 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400">
+                    <circle cx="12" cy="8" r="6" />
+                    <path d="M12 2v2" />
+                    <path d="M12 14v8" />
+                    <path d="M9 18h6" />
+                  </svg>
+                  <h3 className="text-sm md:text-lg font-black text-orange-400 italic uppercase tracking-tighter text-center">Playoff</h3>
                 </button>
-                <button onClick={() => setView(ViewMode.FIXTURES)} className="border border-white/5 bg-slate-950/40 p-12 rounded-sm flex flex-col items-center justify-center space-y-6 hover:bg-slate-900/40 transition-all">
-                  <Swords size={32} className="text-slate-500" /><h3 className="text-xl font-black text-white italic uppercase tracking-tighter">ENTER ARENA</h3>
+                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:from-amber-500/20 hover:to-slate-900/40 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+                  <h3 className="text-sm md:text-lg font-black text-amber-400 italic uppercase tracking-tighter text-center">Knockout</h3>
+                </button>
+                <button onClick={() => setView(ViewMode.FIXTURES)} className="border border-white/5 bg-slate-950/40 p-6 md:p-10 rounded-sm flex flex-col items-center justify-center space-y-4 hover:bg-slate-900/40 transition-all">
+                  <Swords size={28} className="text-slate-500" />
+                  <h3 className="text-sm md:text-lg font-black text-white italic uppercase tracking-tighter text-center">Arena</h3>
                 </button>
               </div>
               <div className="flex items-center justify-between border-b border-white/5 pb-8">
