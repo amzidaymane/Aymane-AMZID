@@ -219,7 +219,7 @@ export const PlayoffGroups: React.FC<PlayoffGroupsProps> = ({
                             Playoff Groups
                         </h2>
                         <p className="text-sm text-slate-400 mt-2">
-                            Winners from each group advance to the Knockout Stage
+                            Top 2 from each group advance to the Knockout Stage
                         </p>
                     </div>
                 </div>
@@ -229,8 +229,8 @@ export const PlayoffGroups: React.FC<PlayoffGroupsProps> = ({
                         onClick={handleSave}
                         disabled={!hasChanges}
                         className={`flex items-center gap-3 px-6 py-3 rounded-sm font-black text-sm uppercase tracking-wider transition-all ${hasChanges
-                                ? 'bg-amber-500 hover:bg-amber-400 text-black'
-                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            ? 'bg-amber-500 hover:bg-amber-400 text-black'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                             }`}
                     >
                         <Save size={16} />
@@ -287,14 +287,14 @@ export const PlayoffGroups: React.FC<PlayoffGroupsProps> = ({
 
                                 {group.players.map((p, pIdx) => {
                                     const team = TEAMS.find(t => t.id === p.teamId);
-                                    const isQualified = pIdx === 0;
+                                    const isQualified = pIdx <= 1; // Top 2 qualify
 
                                     return (
                                         <div
                                             key={p.id}
                                             className={`relative grid grid-cols-[1fr_repeat(8,36px)] gap-1 items-center p-3 rounded-sm border transition-all ${isQualified
-                                                    ? 'border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent'
-                                                    : 'border-white/5 bg-slate-900/30'
+                                                ? 'border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent'
+                                                : 'border-white/5 bg-slate-900/30'
                                                 }`}
                                         >
                                             {isQualified && (
@@ -433,7 +433,7 @@ export const PlayoffGroups: React.FC<PlayoffGroupsProps> = ({
                     <div>
                         <p className="text-sm font-bold text-amber-400 uppercase tracking-wider">Manager Mode Active</p>
                         <p className="text-xs text-slate-400 mt-1">
-                            Enter scores for each match. The top player from each group will automatically qualify for the Knockout Stage.
+                            Enter scores for each match. The top 2 players from each group will automatically qualify for the Knockout Stage.
                         </p>
                     </div>
                 </div>
