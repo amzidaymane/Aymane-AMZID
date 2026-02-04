@@ -308,61 +308,65 @@ export default function FC26App() {
               <div className="relative">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Tournament Progress</span>
-                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">Phase 2 of 3</span>
+                  <span className="text-[9px] font-black text-amber-400 uppercase tracking-[0.3em]">Phase 3 of 3 — Finals</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Group Stage - Complete */}
                   <div className="flex-1 h-2 rounded-full bg-emerald-500/30 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"></div>
                   </div>
-                  {/* Playoff - Active */}
-                  <div className="flex-1 h-2 rounded-full bg-orange-500/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  {/* Playoff - Complete */}
+                  <div className="flex-1 h-2 rounded-full bg-emerald-500/30 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"></div>
                   </div>
-                  {/* Knockout - Pending */}
-                  <div className="flex-1 h-2 rounded-full bg-slate-800"></div>
+                  {/* Knockout - Active */}
+                  <div className="flex-1 h-2 rounded-full bg-amber-500/20 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full animate-pulse" style={{ width: '30%' }}></div>
+                  </div>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wider">Groups ✓</span>
-                  <span className="text-[8px] font-black text-orange-400 uppercase tracking-wider">Playoffs ●</span>
-                  <span className="text-[8px] font-black text-slate-600 uppercase tracking-wider">Knockout</span>
+                  <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wider">Playoffs ✓</span>
+                  <span className="text-[8px] font-black text-amber-400 uppercase tracking-wider">Knockout ●</span>
                 </div>
               </div>
 
-              {/* Hero Card - Current Phase */}
+              {/* Hero Card - Knockout Stage (Current Phase) */}
               <button
-                onClick={() => setView(ViewMode.PLAYOFF)}
-                className="group relative w-full overflow-hidden rounded-lg border-2 border-orange-500/40 bg-gradient-to-br from-orange-500/20 via-slate-950/80 to-slate-950 p-8 md:p-12 transition-all hover:border-orange-400/60 hover:shadow-[0_0_60px_rgba(249,115,22,0.15)]"
+                onClick={() => setView(ViewMode.KNOCKOUT)}
+                className="group relative w-full overflow-hidden rounded-lg border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/20 via-slate-950/80 to-slate-950 p-8 md:p-12 transition-all hover:border-amber-400/60 hover:shadow-[0_0_60px_rgba(245,158,11,0.15)]"
               >
                 {/* Glow Effect */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 blur-[80px] rounded-full pointer-events-none"></div>
 
                 <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                   <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
                       <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M12 2v2" />
-                        <path d="M12 14v8" />
-                        <path d="M9 18h6" />
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
                       </svg>
                     </div>
                     <div className="text-left">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-1 bg-orange-500/30 text-orange-400 text-[8px] font-black uppercase tracking-wider rounded">
+                        <span className="px-2 py-1 bg-amber-500/30 text-amber-400 text-[8px] font-black uppercase tracking-wider rounded">
                           ● Live Now
                         </span>
                       </div>
                       <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tight leading-none">
-                        Playoff Groups
+                        Knockout Stage
                       </h2>
                       <p className="text-sm text-slate-400 mt-2 not-italic">
-                        6 players fighting for 4 knockout spots
+                        Single elimination bracket — Road to the championship
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-orange-400 group-hover:translate-x-2 transition-transform">
+                  <div className="flex items-center gap-3 text-amber-400 group-hover:translate-x-2 transition-transform">
                     <span className="text-sm font-black uppercase tracking-wider">Enter</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14" />
@@ -399,13 +403,18 @@ export default function FC26App() {
                     <p className="text-[9px] text-slate-500 mt-0.5">Group rankings</p>
                   </div>
                 </button>
-                <button onClick={() => setView(ViewMode.KNOCKOUT)} className="group border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent p-5 rounded-lg flex items-center gap-4 hover:from-amber-500/10 hover:border-amber-500/30 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+                <button onClick={() => setView(ViewMode.PLAYOFF)} className="group border border-emerald-500/20 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-emerald-500/30 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                      <circle cx="12" cy="8" r="6" />
+                      <path d="M12 2v2" />
+                      <path d="M12 14v8" />
+                      <path d="M9 18h6" />
+                    </svg>
                   </div>
                   <div className="text-left">
-                    <h3 className="text-sm font-black text-amber-400 uppercase tracking-tight">Knockout</h3>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Bracket view</p>
+                    <h3 className="text-sm font-black text-emerald-400 uppercase tracking-tight">Playoff ✓</h3>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Completed</p>
                   </div>
                 </button>
                 <button onClick={() => setView(ViewMode.FIXTURES)} className="group border border-white/10 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-white/20 transition-all">
