@@ -69,6 +69,16 @@ const RAW_SCHEDULE = `
 46 | Wednesday 28 | 3 | Mohannad Briouel | Elmehdi Mahassine | 3 | 0
 47 | Wednesday 28 | 4 | Hatim Essafi | Soufiane Belkasmi | 0 | 2
 48 | Wednesday 28 | 5 | Anas Bengamra | Anas Habchi | - | -
+49 | PLAYOFF | Monday 2 Feb | 1 | Mohamed Amine Chaabani | Yanis Saidi | - | -
+50 | PLAYOFF | Monday 2 Feb | 2 | Yanis Saidi | Youssef Fadlaoui | - | -
+51 | PLAYOFF | Monday 2 Feb | 3 | Youssef Fadlaoui | Mohamed Amine Chaabani | - | -
+52 | PLAYOFF | Tuesday 3 Feb | 1 | Younes Jebbar | Hatim Essafi | - | -
+53 | PLAYOFF | Tuesday 3 Feb | 2 | Hatim Essafi | Nabil Lamkadem | - | -
+54 | PLAYOFF | Tuesday 3 Feb | 3 | Nabil Lamkadem | Younes Jebbar | - | -
+55 | KNOCKOUT | Monday 8 Feb | 1 | Ilyasse Mbarki | Nabil Lamkadem | - | -
+56 | KNOCKOUT | Monday 8 Feb | 2 | Mohannad Briouel | Younes Jebbar | - | -
+57 | KNOCKOUT | Tuesday 9 Feb | 1 | Nabil Lamkadem | Ilyasse Mbarki | - | -
+58 | KNOCKOUT | Tuesday 9 Feb | 2 | Younes Jebbar | Mohannad Briouel | - | -
 `.trim();
 
 export default function FC26App() {
@@ -108,13 +118,36 @@ export default function FC26App() {
       const parts = line.split('|').map(s => s.trim());
       if (parts.length < 5) return null;
 
-      const absoluteOrder = parseInt(parts[0]);
-      const dLabel = parts[1];
-      const mNum = parseInt(parts[2]);
-      const p1Name = parts[3];
-      const p2Name = parts[4];
-      const score1Str = parts[5]?.trim();
-      const score2Str = parts[6]?.trim();
+      // Check if this is a PLAYOFF or KNOCKOUT match (has category prefix)
+      let category: 'group' | 'playoff' | 'knockout' = 'group';
+      let absoluteOrder: number;
+      let dLabel: string;
+      let mNum: number;
+      let p1Name: string;
+      let p2Name: string;
+      let score1Str: string | undefined;
+      let score2Str: string | undefined;
+
+      if (parts[1] === 'PLAYOFF' || parts[1] === 'KNOCKOUT') {
+        // Format: 49 | PLAYOFF | Monday 2 Feb | 1 | Player1 | Player2 | score1 | score2
+        category = parts[1].toLowerCase() as 'playoff' | 'knockout';
+        absoluteOrder = parseInt(parts[0]);
+        dLabel = parts[2];
+        mNum = parseInt(parts[3]);
+        p1Name = parts[4];
+        p2Name = parts[5];
+        score1Str = parts[6]?.trim();
+        score2Str = parts[7]?.trim();
+      } else {
+        // Standard format: 1 | Monday 19 | 1 | Player1 | Player2 | score1 | score2
+        absoluteOrder = parseInt(parts[0]);
+        dLabel = parts[1];
+        mNum = parseInt(parts[2]);
+        p1Name = parts[3];
+        p2Name = parts[4];
+        score1Str = parts[5]?.trim();
+        score2Str = parts[6]?.trim();
+      }
 
       const p1 = INITIAL_PLAYERS.find(p => p.name === p1Name);
       const p2 = INITIAL_PLAYERS.find(p => p.name === p2Name);
@@ -130,7 +163,8 @@ export default function FC26App() {
         dayLabel: dLabel,
         matchNumber: mNum,
         score1: hasScore ? parseInt(score1Str) : null,
-        score2: hasScore ? parseInt(score2Str) : null
+        score2: hasScore ? parseInt(score2Str) : null,
+        category
       } as Fixture;
     }).filter(f => f !== null) as Fixture[];
   };

@@ -373,8 +373,19 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
       {/* Subtle Top Highlight */}
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
-      {/* Match Label + Status Badge */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-3">
+      {/* Match Label + Category + Status Badge */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2">
+        {/* Category Badge */}
+        {fixture.category === 'playoff' && (
+          <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded text-[7px] font-black text-orange-400 uppercase tracking-wider">
+            Playoff
+          </span>
+        )}
+        {fixture.category === 'knockout' && (
+          <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded text-[7px] font-black text-amber-400 uppercase tracking-wider">
+            Knockout
+          </span>
+        )}
         <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em] italic">MATCH {fixture.matchNumber}</span>
         {isFinished ? (
           <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[7px] font-black text-emerald-400 uppercase tracking-wider">
@@ -429,15 +440,15 @@ const CompactMatchCard: React.FC<{ fixture: Fixture, players: Player[], onFinali
               {isFinished ? (
                 <div className="flex items-center gap-3 md:gap-5">
                   <span className={`text-3xl md:text-4xl font-black italic leading-none transition-all ${fixture.score1! > fixture.score2!
-                      ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
-                      : 'text-slate-600'
+                    ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-600'
                     }`}>{fixture.score1}</span>
                   <div className="flex flex-col items-center">
                     <span className="text-[8px] text-slate-600 font-black uppercase tracking-wider">VS</span>
                   </div>
                   <span className={`text-3xl md:text-4xl font-black italic leading-none transition-all ${fixture.score2! > fixture.score1!
-                      ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
-                      : 'text-slate-600'
+                    ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-600'
                     }`}>{fixture.score2}</span>
                 </div>
               ) : (

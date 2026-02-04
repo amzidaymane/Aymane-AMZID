@@ -40,6 +40,7 @@ export interface Fixture {
   timestamp: number;
   dayLabel: string;      // Mandatory for strict schedule
   matchNumber: number;   // Mandatory for strict schedule
+  category?: 'group' | 'playoff' | 'knockout'; // Game category for Arena display
 }
 
 export type KnockoutRound = 'THIRD_PLAYOFF' | 'R16' | 'QF' | 'SF' | 'F';
