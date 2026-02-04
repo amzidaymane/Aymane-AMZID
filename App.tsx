@@ -313,9 +313,15 @@ export default function FC26App() {
               <img src="https://www.greatplacetowork.in/great/api/assets/uploads/5483/logo/logo.png" alt="Logo" style={{ filter: 'brightness(0) saturate(100%) invert(84%) sepia(50%) saturate(769%) hue-rotate(357deg) brightness(105%) contrast(107%)' }} className="h-16 w-auto object-contain" />
               <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">PGD <span className="text-slate-600 not-italic tracking-[0.3em] font-light ml-2 text-xs">FC26 TOURNAMENT</span></h1>
             </div>
-            <nav className="hidden lg:flex items-center space-x-1">
-              <button onClick={() => setView(ViewMode.ROSTER)} className={`px-8 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.3em] italic ${view === ViewMode.ROSTER ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>Athletes</button>
-              <button onClick={() => setView(ViewMode.FIXTURES)} className={`px-8 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.3em] italic ${view === ViewMode.FIXTURES ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>Arena</button>
+            <nav className="hidden lg:flex items-center gap-2 bg-slate-900/60 p-1.5 rounded-lg border border-white/5">
+              <button onClick={() => setView(ViewMode.ROSTER)} className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${view === ViewMode.ROSTER ? 'bg-white text-slate-900 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                <Users size={14} />
+                Athletes
+              </button>
+              <button onClick={() => setView(ViewMode.FIXTURES)} className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${view === ViewMode.FIXTURES ? 'bg-white text-slate-900 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                <Swords size={14} />
+                Arena
+              </button>
             </nav>
             <div className="flex items-center space-x-6">
               <div className="flex items-center gap-2">
@@ -338,46 +344,82 @@ export default function FC26App() {
           ) : (
 
             <div className="space-y-8">
-              {/* Tournament Phase Timeline */}
-              <div className="relative">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Tournament Progress</span>
-                  <span className="text-[9px] font-black text-amber-400 uppercase tracking-[0.3em]">Phase 3 of 3 — Finals</span>
+              {/* Zone 1: Tournament Status Bar (Compact) */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/60 border border-white/5 rounded-lg px-6 py-4">
+                <div className="flex items-center gap-4">
+                  <span className="px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded text-[10px] font-black text-amber-400 uppercase tracking-wider">
+                    Knockout Stage
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phase 3 of 3</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* Group Stage - Complete */}
-                  <div className="flex-1 h-2 rounded-full bg-emerald-500/30 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"></div>
-                  </div>
-                  {/* Playoff - Complete */}
-                  <div className="flex-1 h-2 rounded-full bg-emerald-500/30 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"></div>
-                  </div>
-                  {/* Knockout - Active */}
-                  <div className="flex-1 h-2 rounded-full bg-amber-500/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full animate-pulse" style={{ width: '30%' }}></div>
-                  </div>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wider">Groups ✓</span>
-                  <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wider">Playoffs ✓</span>
-                  <span className="text-[8px] font-black text-amber-400 uppercase tracking-wider">Knockout ●</span>
+                <div className="flex items-center gap-6 text-[11px] font-bold text-slate-400">
+                  <span><span className="text-white font-black">{fixtures.filter(f => f.status === 'finished').length}</span> Matches Played</span>
+                  <span className="text-slate-700">•</span>
+                  <span><span className="text-amber-400 font-black">{players.length}</span> Athletes</span>
+                  <span className="text-slate-700">•</span>
+                  <span>Top: <span className="text-emerald-400 font-black">{sortedPlayersForRanking[0]?.name.split(' ').slice(-1)[0] || '-'}</span></span>
                 </div>
               </div>
 
-              {/* Hero Card - Knockout Stage (Current Phase) */}
-              <button
-                onClick={() => setView(ViewMode.KNOCKOUT)}
-                className="group relative w-full overflow-hidden rounded-lg border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/20 via-slate-950/80 to-slate-950 p-8 md:p-12 transition-all hover:border-amber-400/60 hover:shadow-[0_0_60px_rgba(245,158,11,0.15)]"
-              >
-                {/* Glow Effect */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+              {/* Zone 2: Tournament Stages (3 Buttons) */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Standings Button */}
+                <button
+                  onClick={() => setView(ViewMode.GROUPS)}
+                  className="group relative overflow-hidden rounded-xl border border-white/10 bg-slate-900/40 p-5 hover:bg-slate-800/60 hover:border-white/20 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <LayoutGrid size={20} className="text-emerald-500" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Standings</h3>
+                      </div>
+                      <p className="text-[10px] text-emerald-500">✓ Complete</p>
+                    </div>
+                  </div>
+                </button>
 
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                {/* 3rd Place Playoff Button */}
+                <button
+                  onClick={() => setView(ViewMode.PLAYOFF)}
+                  className="group relative overflow-hidden rounded-xl border border-orange-500/20 bg-slate-900/40 p-5 hover:bg-slate-800/60 hover:border-orange-500/30 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500">
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M12 2v2" />
+                        <path d="M12 14v8" />
+                        <path d="M9 18h6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight">3rd Place</h3>
+                      </div>
+                      <p className="text-[10px] text-orange-500">✓ Complete</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Knockout Button (Primary/Active) */}
+                <button
+                  onClick={() => setView(ViewMode.KNOCKOUT)}
+                  className="group relative overflow-hidden rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-slate-900/60 to-slate-900 p-5 hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(245,158,11,0.15)] transition-all text-left"
+                >
+                  {/* Glow */}
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+
+                  <div className="relative flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                         <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                         <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                         <path d="M4 22h16" />
@@ -386,84 +428,20 @@ export default function FC26App() {
                         <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
                       </svg>
                     </div>
-                    <div className="text-left">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-1 bg-amber-500/30 text-amber-400 text-[8px] font-black uppercase tracking-wider rounded">
-                          ● Live Now
-                        </span>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Knockout</h3>
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tight leading-none">
-                        Knockout Stage
-                      </h2>
-                      <p className="text-sm text-slate-400 mt-2 not-italic">
-                        Single elimination bracket — Road to the championship
-                      </p>
+                      <p className="text-[10px] text-amber-400">● Live Now</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-amber-400 group-hover:translate-x-2 transition-transform">
-                    <span className="text-sm font-black uppercase tracking-wider">Enter</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </button>
-
-              {/* Quick Stats Bar */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
-                  <p className="text-2xl font-black text-white">{fixtures.filter(f => f.status === 'finished').length}</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Matches Played</p>
-                </div>
-                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
-                  <p className="text-2xl font-black text-amber-400">{players.length}</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Athletes</p>
-                </div>
-                <div className="bg-slate-900/50 border border-white/5 rounded-lg p-4 text-center">
-                  <p className="text-2xl font-black text-emerald-400">{sortedPlayersForRanking[0]?.name.split(' ').slice(-1)[0] || '-'}</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">Top Scorer</p>
-                </div>
-              </div>
-
-              {/* Secondary Navigation */}
-              <div className="grid grid-cols-3 gap-4">
-                <button onClick={() => setView(ViewMode.GROUPS)} className="group border border-white/10 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-white/20 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                    <LayoutGrid size={18} className="text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Standings</h3>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Group rankings</p>
-                  </div>
-                </button>
-                <button onClick={() => setView(ViewMode.PLAYOFF)} className="group border border-emerald-500/20 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-emerald-500/30 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
-                      <circle cx="12" cy="8" r="6" />
-                      <path d="M12 2v2" />
-                      <path d="M12 14v8" />
-                      <path d="M9 18h6" />
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-sm font-black text-emerald-400 uppercase tracking-tight">Playoff ✓</h3>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Completed</p>
-                  </div>
-                </button>
-                <button onClick={() => setView(ViewMode.FIXTURES)} className="group border border-white/10 bg-slate-900/40 p-5 rounded-lg flex items-center gap-4 hover:bg-slate-800/60 hover:border-white/20 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                    <Swords size={18} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Arena</h3>
-                    <p className="text-[9px] text-slate-500 mt-0.5">All fixtures</p>
-                  </div>
                 </button>
               </div>
-              <div className="flex items-center justify-between border-b border-white/5 pb-8">
+
+              {/* Zone 3: Athlete Registry Header */}
+              <div className="flex items-center justify-between border-b border-white/5 pb-6 pt-4">
                 <div className="flex items-center gap-6">
-                  <h2 className="text-xl font-black text-white italic uppercase tracking-[0.4em]">Athlete Registry</h2>
+                  <h2 className="text-xl font-black text-white italic uppercase tracking-[0.3em]">Athletes</h2>
                   <div className="flex bg-slate-900/50 p-1 rounded-sm border border-white/5">
                     <button onClick={() => setRosterView('GRID')} className={`p-2 rounded-sm transition-all ${rosterView === 'GRID' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
                       <LayoutGrid size={14} />
@@ -475,7 +453,7 @@ export default function FC26App() {
                 </div>
                 <div className="relative group">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-blue-500 transition-colors"><Search size={14} /></div>
-                  <input type="text" placeholder="SEARCH DATABASE..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-64 transition-all" />
+                  <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-950 border border-white/5 rounded-sm pl-12 pr-6 py-3 text-[10px] font-black tracking-widest text-white focus:outline-none focus:border-blue-600/50 w-48 transition-all" />
                 </div>
               </div>
 
